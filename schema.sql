@@ -127,6 +127,12 @@ CREATE INDEX IF NOT EXISTS reports_status_idx
 CREATE INDEX IF NOT EXISTS reports_created_at_idx
     ON reports (created_at DESC);
 
+-- Sincronización incremental de la API de lectura. El orden coincide con el
+-- cursor (updated_at, id) que usan los consumidores externos: sin este índice
+-- cada página degenera en un recorrido completo de la tabla.
+CREATE INDEX IF NOT EXISTS reports_updated_at_id_idx
+    ON reports (updated_at ASC, id ASC);
+
 CREATE TABLE IF NOT EXISTS report_media (
     id UUID PRIMARY KEY,
     report_id UUID NOT NULL REFERENCES reports(id) ON DELETE CASCADE,

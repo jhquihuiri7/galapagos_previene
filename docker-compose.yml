@@ -17,5 +17,96 @@ services:
       timeout: 5s
       retries: 10
 
+  bot:
+    build:
+      context: .
+      target: bot
+    image: galapagos-previene/bot:prod
+    container_name: galapagos-previene-bot
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?falta TELEGRAM_BOT_TOKEN}
+      # Dentro de la red de Compose la base responde en el nombre del servicio,
+      # no en localhost. Se construye aquí para que el DATABASE_URL del .env
+      # (que apunta a localhost) siga sirviendo al ejecutar el bot en el host.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-galapagos}:${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-galapagos_previene}
+      MAX_MEDIA_FILES: ${MAX_MEDIA_FILES:-10}
+      DB_POOL_MIN_SIZE: ${DB_POOL_MIN_SIZE:-1}
+      DB_POOL_MAX_SIZE: ${DB_POOL_MAX_SIZE:-10}
+      DB_COMMAND_TIMEOUT: ${DB_COMMAND_TIMEOUT:-30}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    # El bot no escribe archivos: persiste en PostgreSQL y deja las evidencias
+    # alojadas en Telegram. Un sistema de archivos de solo lectura reduce el
+    # impacto de una dependencia comprometida.
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    # SIGINT es la señal que python-telegram-bot maneja para apagar el pool de
+    # PostgreSQL de forma ordenada, igual que hace la unidad systemd.
+    stop_signal: SIGINT
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  api:
+    build:
+      context: .
+      target: api
+    image: galapagos-previene/api:prod
+    container_name: galapagos-previene-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Rol de solo lectura creado con sql/api_readonly.sql. Deliberadamente NO
+      # se reutiliza POSTGRES_USER: la API no debe poder escribir reportes.
+      API_DATABASE_URL: postgresql://galapagos_api:${API_DB_PASSWORD:?falta API_DB_PASSWORD}@postgres:5432/${POSTGRES_DB:-galapagos_previene}
+      # Claves separadas por coma. Para rotarlas se añade la nueva, se migra el
+      # consumidor y después se retira la anterior.
+      API_KEYS: ${API_KEYS:?falta API_KEYS}
+      # Necesario para descargar las evidencias: el token no sale de este
+      # proceso, la API actúa de intermediaria ante Telegram.
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?falta TELEGRAM_BOT_TOKEN}
+      API_MEDIA_CHUNK_SIZE: ${API_MEDIA_CHUNK_SIZE:-65536}
+      API_MEDIA_TIMEOUT_SECONDS: ${API_MEDIA_TIMEOUT_SECONDS:-60}
+      API_DB_POOL_MIN_SIZE: ${API_DB_POOL_MIN_SIZE:-1}
+      API_DB_POOL_MAX_SIZE: ${API_DB_POOL_MAX_SIZE:-10}
+      API_DB_COMMAND_TIMEOUT: ${API_DB_COMMAND_TIMEOUT:-30}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    # Solo accesible desde la propia VM, igual que PostgreSQL. SIGTAR corre
+    # aquí mismo. Si algún día se consume desde fuera, hay que poner delante un
+    # proxy con TLS en lugar de abrir este puerto.
+    ports:
+      - "127.0.0.1:${API_PORT:-8080}:8080"
+    # La API transmite los archivos por trozos hacia el cliente y nunca los
+    # guarda, así que tampoco necesita escribir en su sistema de archivos.
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      # La imagen no trae curl; se usa el intérprete que ya está instalado.
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=5).status == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 volumes:
   galapagos_postgres_data:

@@ -62,7 +62,9 @@ GalapagosPreviene/
 ├── .env.example
 ├── .gitignore
 ├── .python-version            # Versión recomendada para pyenv y similares
-├── docker-compose.yml
+├── Dockerfile                # Imagen de producción del bot
+├── .dockerignore
+├── docker-compose.yml         # PostgreSQL + bot
 ├── main.py
 ├── pytest.ini
 ├── requirements.txt          # Dependencias de producción
@@ -683,6 +685,75 @@ VM o servicio administrado, configure TLS en el DSN según el proveedor.
 Para actualizar, detenga el servicio, respalde PostgreSQL, copie la nueva
 versión, instale dependencias, ejecute pruebas y vuelva a iniciarlo. No ejecute
 dos instancias de polling simultáneas durante el relevo.
+
+## Despliegue con Docker Compose (recomendado)
+
+Esta alternativa ejecuta el bot y PostgreSQL como contenedores. Sustituye a la
+sección anterior: no hace falta instalar Python, crear el entorno virtual ni
+registrar la unidad de systemd, porque `restart: unless-stopped` reinicia el
+bot ante fallos y al arrancar la máquina.
+
+1. Instale Docker y el complemento Compose. Confirme `docker --version` y
+   `docker compose version`.
+
+2. Clone el repositorio y cree el archivo de secretos a partir del ejemplo:
+
+   ```bash
+   cp .env.example .env
+   chmod 600 .env
+   ```
+
+   Edite `.env` con el token de BotFather y una contraseña propia. La variable
+   `DATABASE_URL` de ese archivo apunta a `localhost` y solo se usa al ejecutar
+   el bot directamente en el host; el contenedor recibe su propio DSN, que
+   Compose arma apuntando al servicio `postgres`.
+
+3. Construya la imagen y levante ambos servicios:
+
+   ```bash
+   docker compose up -d --build
+   docker compose ps
+   ```
+
+   El bot espera a que PostgreSQL responda `healthy` antes de arrancar, así que
+   el orden de inicio queda resuelto también tras reiniciar la máquina.
+
+4. Revise los registros (no deben contener token, DSN ni URL temporal):
+
+   ```bash
+   docker compose logs -f bot
+   ```
+
+   Un arranque correcto muestra `Base de datos preparada y comandos de Telegram
+   configurados` seguido de `Application started`.
+
+Para actualizar, traiga la nueva versión, ejecute las pruebas y reconstruya:
+
+```bash
+git pull
+.venv/bin/python -m pytest
+docker compose up -d --build
+```
+
+Compose detiene el contenedor anterior antes de iniciar el nuevo, de modo que
+no coexisten dos instancias de polling. Respalde PostgreSQL antes de actualizar:
+
+```bash
+docker compose exec postgres pg_dump -U galapagos galapagos_previene \
+  > respaldo-$(date +%F).sql
+```
+
+El volumen `galapagos_postgres_data` conserva los datos entre reconstrucciones,
+pero no sustituye a un respaldo guardado fuera de la máquina.
+
+### Qué endurece la imagen
+
+El contenedor del bot corre como usuario sin privilegios (UID 10001), con el
+sistema de archivos en solo lectura y `no-new-privileges`. Solo `/tmp` es
+escribible, mediante tmpfs: el bot no guarda archivos porque los reportes viven
+en PostgreSQL y las evidencias permanecen alojadas en Telegram. El token nunca
+entra en la imagen; se inyecta como variable de entorno al ejecutar. La
+rotación de registros queda limitada a 3 archivos de 10 MB.
 
 ## Migrar de polling a webhook
 

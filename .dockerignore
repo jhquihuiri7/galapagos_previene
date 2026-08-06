@@ -1,0 +1,37 @@
+# Secretos: nunca deben quedar dentro de la imagen. El token se inyecta en
+# tiempo de ejecución mediante env_file/environment, no en una capa.
+.env
+.env.*
+!.env.example
+
+# Entornos virtuales del host: contienen binarios de otra plataforma.
+.venv/
+venv/
+
+# Caché de Python y de herramientas.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Historial de Git y material que no se ejecuta en producción.
+.git/
+.gitignore
+tests/
+docs/
+README.md
+pytest.ini
+requirements-dev.txt
+sql/
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Editores y sistema operativo.
+.idea/
+.vscode/
+.DS_Store
+*.log
