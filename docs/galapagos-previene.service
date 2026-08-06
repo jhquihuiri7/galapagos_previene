@@ -1,0 +1,39 @@
+[Unit]
+Description=Bot de Telegram Galapagos Previene
+Documentation=file:///opt/galapagos-previene/README.md
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=galapagos-previene
+Group=galapagos-previene
+WorkingDirectory=/opt/galapagos-previene
+EnvironmentFile=/etc/galapagos-previene.env
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/galapagos-previene/.venv/bin/python /opt/galapagos-previene/main.py
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+KillSignal=SIGINT
+UMask=0077
+
+# El bot solo necesita red y acceso de lectura a su codigo. PostgreSQL conserva
+# los datos y Telegram conserva las evidencias; el servicio no escribe archivos.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target
