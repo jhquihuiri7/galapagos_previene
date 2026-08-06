@@ -65,7 +65,8 @@ GalapagosPreviene/
 ├── docker-compose.yml
 ├── main.py
 ├── pytest.ini
-├── requirements.txt
+├── requirements.txt          # Dependencias de producción
+├── requirements-dev.txt      # Producción + pytest (solo desarrollo)
 ├── schema.sql
 └── README.md
 ```
@@ -425,7 +426,7 @@ docker compose ps
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
 python main.py
 ```
 
@@ -456,7 +457,7 @@ docker compose ps
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
 python main.py
 ```
 
@@ -471,7 +472,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 No es obligatorio activar el entorno; esta alternativa funciona igual:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 .\.venv\Scripts\python.exe main.py
 ```
 

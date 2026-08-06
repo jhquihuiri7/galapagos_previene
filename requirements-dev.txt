@@ -1,0 +1,6 @@
+# Dependencias de desarrollo y pruebas.
+# En el servidor de producción se instala únicamente requirements.txt.
+-r requirements.txt
+
+pytest==8.3.5
+pytest-asyncio==0.25.3
