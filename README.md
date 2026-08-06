@@ -6,7 +6,7 @@ comparte una ubicación y escribe una descripción; PostgreSQL conserva el
 reporte y los metadatos, mientras que **Telegram continúa siendo el único
 almacenamiento de las evidencias**.
 
-El proyecto usa Python 3.12+, `python-telegram-bot` 22.8, `asyncpg`, PostgreSQL
+El proyecto usa Python 3.11+, `python-telegram-bot` 22.8, `asyncpg`, PostgreSQL
 y Docker Compose. En desarrollo recibe actualizaciones mediante *polling* y su
 separación entre handlers, servicios y repositorios permite cambiar el
 transporte a webhook sin reescribir el flujo.
@@ -381,7 +381,7 @@ current token**, configure el nuevo valor y reinicie el servicio.
 
 ### Requisitos
 
-- Python 3.12 o posterior (`python --version`).
+- Python 3.11 o posterior (`python --version`).
 - Docker Engine con Compose v2 o Docker Desktop.
 - Una cuenta de bot y su token de BotFather.
 - Puertos de salida HTTPS hacia Telegram; el puerto local 5432 libre, o un
@@ -431,7 +431,7 @@ python main.py
 ```
 
 En macOS, inicie Docker Desktop antes de `docker compose`. Si instaló Python
-con Homebrew, compruebe que `python3` sea 3.12 o superior. Para detener el bot,
+con Homebrew, compruebe que `python3` sea 3.11 o superior. Para detener el bot,
 use `Ctrl+C`. Para detener PostgreSQL sin borrar sus datos:
 
 ```bash
@@ -444,7 +444,7 @@ eliminar la base local.
 
 ### Windows (PowerShell)
 
-Instale Python 3.12 marcando **Add Python to PATH** y Docker Desktop con WSL 2.
+Instale Python 3.11 o superior marcando **Add Python to PATH** y Docker Desktop con WSL 2.
 En PowerShell, desde la raíz:
 
 ```powershell
@@ -454,7 +454,7 @@ notepad .env
 docker compose up -d
 docker compose ps
 
-py -3.12 -m venv .venv
+py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -r requirements-dev.txt
@@ -599,7 +599,7 @@ instalación real conviene restringir SSH, activar actualizaciones de seguridad,
 usar firewall, copias de respaldo y, si corresponde, PostgreSQL administrado.
 
 1. Instale Python, Docker, el complemento Compose y herramientas de copia según
-   los paquetes de su distribución. Confirme `python3 --version` (3.12+),
+   los paquetes de su distribución. Confirme `python3 --version` (3.11+),
    `docker --version` y `docker compose version`.
 2. Cree la identidad y el directorio de servicio:
 
