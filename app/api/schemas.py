@@ -74,7 +74,12 @@ class ReportOut(BaseModel):
     )
     report_kind: str = Field(description="EVENT o INCIDENT")
     event_type_code: str | None = Field(
-        default=None, description="RAIN, TSUNAMI o FIRE; nulo en un INCIDENT"
+        default=None,
+        description=(
+            "Código de tres letras del evento adverso (TSU, ERV, LLI, INU, OLJ, "
+            "SEQ, CQM, AMA, PLG, INF, SIS, COI, DES, CAD, VDV); nulo en un "
+            "INCIDENT"
+        ),
     )
     event_type_name: str | None = None
     latitude: float | None
@@ -133,6 +138,13 @@ class EventTypeOut(BaseModel):
 
     code: str
     name: str
+    family: str = Field(
+        description=(
+            "Familia oficial del evento: Oceanográfico, Geológico interno, "
+            "Geológico externo, Hidrometeorológico, Ambiental, Biológico, "
+            "Tecnológico o Fallo estructural"
+        )
+    )
     is_active: bool
 
 

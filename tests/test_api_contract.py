@@ -87,8 +87,8 @@ def _media(report_id: UUID) -> ReportMedia:
 def _exported(report_id: UUID, updated_at: datetime = NOW) -> ExportedReport:
     return ExportedReport(
         report=_report(report_id, updated_at),
-        event_type_code="RAIN",
-        event_type_name="Lluvia",
+        event_type_code="LLI",
+        event_type_name="Lluvias intensas",
         media=(_media(report_id),),
     )
 
@@ -194,7 +194,7 @@ def test_response_never_exposes_telegram_identifiers_or_personal_data(
 
     body = response.json()
     assert body["id"] == str(report_id)
-    assert body["event_type_code"] == "RAIN"
+    assert body["event_type_code"] == "LLI"
     assert body["latitude"] == -0.7436
     assert set(body["media"][0]) == {
         "id",
@@ -345,3 +345,36 @@ def test_multiple_keys_allow_rotation_without_downtime(
 
     with pytest.raises(Exception):
         deps.require_api_key(settings, "Bearer " + "c" * 32)
+
+
+def test_event_types_expose_code_name_family_and_activity(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """La familia viaja en el catálogo para no replicarla en cada consumidor."""
+
+    async def _fake_list(_pool: object) -> list[dict[str, object]]:
+        return [
+            {
+                "id": 1,
+                "code": "LLI",
+                "name": "Lluvias intensas",
+                "family": "Hidrometeorológico",
+                "is_active": True,
+            }
+        ]
+
+    monkeypatch.setattr(reports_router, "list_event_types", _fake_list)
+
+    response = client.get("/v1/event-types", headers=AUTH)
+    assert response.status_code == 200
+
+    body = response.json()
+    assert body == [
+        {
+            "code": "LLI",
+            "name": "Lluvias intensas",
+            "family": "Hidrometeorológico",
+            "is_active": True,
+        }
+    ]

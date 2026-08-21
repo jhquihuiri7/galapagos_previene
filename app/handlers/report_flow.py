@@ -31,6 +31,7 @@ from app.keyboards import (
     remove_keyboard,
 )
 from app.models import (
+    EVENT_TYPE_LABELS,
     EventType,
     ReportKind,
     ReportMediaCreate,
@@ -65,12 +66,11 @@ from app.states import (
 logger = logging.getLogger(__name__)
 
 
-# Etiquetas legibles para confirmar al usuario el tipo de evento elegido.
-EVENT_TYPE_LABELS = {
-    EventType.RAIN: "Lluvia",
-    EventType.TSUNAMI: "Tsunami",
-    EventType.FIRE: "Incendio",
-}
+# El enrutador solo acepta los códigos vigentes; cualquier otro callback cae en
+# la respuesta genérica de «botón fuera de paso».
+_EVENT_CALLBACK_PATTERN = (
+    "^event:(?:" + "|".join(event.value for event in EventType) + ")$"
+)
 
 
 def validate_location(latitude: float, longitude: float) -> bool:
@@ -535,7 +535,7 @@ def build_conversation_handler() -> ConversationHandler:
             CHOOSE_EVENT_TYPE: [
                 CallbackQueryHandler(
                     choose_event_type,
-                    pattern=r"^event:(?:RAIN|TSUNAMI|FIRE)$",
+                    pattern=_EVENT_CALLBACK_PATTERN,
                 ),
                 CallbackQueryHandler(unexpected_callback),
                 MessageHandler(not_command, unexpected_event_type),

@@ -116,6 +116,7 @@ async def read_event_types(pool: PoolDep) -> list[EventTypeOut]:
         EventTypeOut(
             code=row["code"],
             name=row["name"],
+            family=row["family"],
             is_active=row["is_active"],
         )
         for row in rows

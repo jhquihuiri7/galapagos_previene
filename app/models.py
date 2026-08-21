@@ -20,11 +20,70 @@ class ReportKind(str, Enum):
 
 
 class EventType(str, Enum):
-    """Códigos estables de los tipos de evento precargados en PostgreSQL."""
+    """Códigos oficiales de tres letras de los eventos adversos.
 
-    RAIN = "RAIN"
-    TSUNAMI = "TSUNAMI"
-    FIRE = "FIRE"
+    Coinciden con la nomenclatura de la tabla de eventos adversos y con lo que
+    se siembra en ``event_types`` desde ``schema.sql``. El orden de los miembros
+    es el del catálogo oficial y determina el orden de los botones.
+    """
+
+    TSU = "TSU"
+    ERV = "ERV"
+    LLI = "LLI"
+    INU = "INU"
+    OLJ = "OLJ"
+    SEQ = "SEQ"
+    CQM = "CQM"
+    AMA = "AMA"
+    PLG = "PLG"
+    INF = "INF"
+    SIS = "SIS"
+    COI = "COI"
+    DES = "DES"
+    CAD = "CAD"
+    VDV = "VDV"
+
+
+# Nombre completo de cada evento. Debe coincidir con la columna ``name`` que
+# siembra ``schema.sql``: es el texto con el que se confirma la selección.
+EVENT_TYPE_LABELS: dict[EventType, str] = {
+    EventType.TSU: "Tsunami",
+    EventType.ERV: "Erupción volcánica",
+    EventType.LLI: "Lluvias intensas",
+    EventType.INU: "Inundación",
+    EventType.OLJ: "Oleaje",
+    EventType.SEQ: "Sequía",
+    EventType.CQM: "Contaminación química",
+    EventType.AMA: "Accidente en medios acuáticos",
+    EventType.PLG: "Plaga",
+    EventType.INF: "Incendio forestal",
+    EventType.SIS: "Sismo",
+    EventType.COI: "Colapso en infraestructura",
+    EventType.DES: "Deslizamiento",
+    EventType.CAD: "Caídas (Colapso)",
+    EventType.VDV: "Vendaval",
+}
+
+
+# Texto de los botones. Se abrevian los nombres más largos porque el teclado
+# muestra dos opciones por fila y Telegram no permite ajustar su ancho.
+EVENT_TYPE_BUTTONS: dict[EventType, str] = {
+    EventType.TSU: "🌊 Tsunami",
+    EventType.ERV: "🌋 Erupción volcánica",
+    EventType.LLI: "🌧️ Lluvias intensas",
+    EventType.INU: "💧 Inundación",
+    EventType.OLJ: "🌊 Oleaje",
+    EventType.SEQ: "🏜️ Sequía",
+    EventType.CQM: "⚗️ Cont. química",
+    EventType.AMA: "🚤 Acc. acuático",
+    EventType.PLG: "🐛 Plaga",
+    EventType.INF: "🔥 Inc. forestal",
+    EventType.SIS: "🌍 Sismo",
+    EventType.COI: "🏗️ Colapso infra.",
+    EventType.DES: "⛰️ Deslizamiento",
+    EventType.CAD: "🧱 Caídas",
+    EventType.VDV: "🌬️ Vendaval",
+}
 
 
 class ReportStatus(str, Enum):
@@ -144,6 +203,8 @@ class ReportMedia:
 
 
 __all__ = [
+    "EVENT_TYPE_BUTTONS",
+    "EVENT_TYPE_LABELS",
     "EventType",
     "MediaType",
     "Report",

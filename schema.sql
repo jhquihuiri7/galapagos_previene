@@ -19,19 +19,39 @@ CREATE TABLE IF NOT EXISTS event_types (
     id SMALLSERIAL PRIMARY KEY,
     code VARCHAR(32) UNIQUE NOT NULL,
     name VARCHAR(64) NOT NULL,
+    family VARCHAR(32) NOT NULL DEFAULT 'Sin clasificar',
     is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
+-- La columna se añadió después de la primera versión del esquema. El DEFAULT
+-- permite que una base ya existente la incorpore sin quedarse sin valor; el
+-- upsert de más abajo la rellena con la familia oficial de cada evento.
+ALTER TABLE event_types
+    ADD COLUMN IF NOT EXISTS family VARCHAR(32) NOT NULL DEFAULT 'Sin clasificar';
+
 -- La carga es idempotente: ejecutar schema.sql otra vez actualiza el nombre y
 -- reactiva los valores oficiales sin crear filas duplicadas.
-INSERT INTO event_types (code, name, is_active)
+INSERT INTO event_types (code, name, family, is_active)
 VALUES
-    ('RAIN', 'Lluvia', TRUE),
-    ('TSUNAMI', 'Tsunami', TRUE),
-    ('FIRE', 'Incendio', TRUE)
+    ('TSU', 'Tsunami', 'Oceanográfico', TRUE),
+    ('ERV', 'Erupción volcánica', 'Geológico interno', TRUE),
+    ('LLI', 'Lluvias intensas', 'Hidrometeorológico', TRUE),
+    ('INU', 'Inundación', 'Hidrometeorológico', TRUE),
+    ('OLJ', 'Oleaje', 'Oceanográfico', TRUE),
+    ('SEQ', 'Sequía', 'Hidrometeorológico', TRUE),
+    ('CQM', 'Contaminación química', 'Ambiental', TRUE),
+    ('AMA', 'Accidente en medios acuáticos', 'Tecnológico', TRUE),
+    ('PLG', 'Plaga', 'Biológico', TRUE),
+    ('INF', 'Incendio forestal', 'Ambiental', TRUE),
+    ('SIS', 'Sismo', 'Geológico interno', TRUE),
+    ('COI', 'Colapso en infraestructura', 'Fallo estructural', TRUE),
+    ('DES', 'Deslizamiento', 'Geológico externo', TRUE),
+    ('CAD', 'Caídas (Colapso)', 'Geológico externo', TRUE),
+    ('VDV', 'Vendaval', 'Hidrometeorológico', TRUE)
 ON CONFLICT (code) DO UPDATE
 SET
     name = EXCLUDED.name,
+    family = EXCLUDED.family,
     is_active = EXCLUDED.is_active;
 
 CREATE TABLE IF NOT EXISTS reports (
@@ -187,3 +207,22 @@ CREATE INDEX IF NOT EXISTS report_media_telegram_file_unique_id_idx
 
 CREATE INDEX IF NOT EXISTS report_media_telegram_media_group_id_idx
     ON report_media (telegram_media_group_id);
+
+-- Migración de la nomenclatura inicial (RAIN, TSUNAMI, FIRE) a los códigos
+-- oficiales de tres letras. Va al final del archivo porque necesita que
+-- `reports` ya exista. Es idempotente: después de la primera ejecución no
+-- quedan filas antiguas y ninguna de las dos sentencias afecta a nada.
+UPDATE reports AS report
+SET event_type_id = vigente.id
+FROM event_types AS antiguo, event_types AS vigente
+WHERE report.event_type_id = antiguo.id
+  AND vigente.code = CASE antiguo.code
+      WHEN 'RAIN' THEN 'LLI'
+      WHEN 'TSUNAMI' THEN 'TSU'
+      WHEN 'FIRE' THEN 'INF'
+  END;
+
+-- Ya sin reportes que los referencien, la clave foránea ON DELETE RESTRICT
+-- permite retirarlos del catálogo.
+DELETE FROM event_types
+WHERE code IN ('RAIN', 'TSUNAMI', 'FIRE');

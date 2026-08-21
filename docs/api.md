@@ -76,8 +76,8 @@ cancelados son estado interno del flujo del bot.
   "id": "3f2a…",
   "reporter_id": "8c11…",
   "report_kind": "EVENT",
-  "event_type_code": "RAIN",
-  "event_type_name": "Lluvia",
+  "event_type_code": "LLI",
+  "event_type_name": "Lluvias intensas",
   "latitude": -0.7436,
   "longitude": -90.3134,
   "location_accuracy": 12.5,
@@ -104,7 +104,28 @@ cancelados son estado interno del flujo del bot.
 ```
 
 `report_kind` es `EVENT` o `INCIDENT`. En un `INCIDENT`, `event_type_code` es
-`null`. Los códigos de evento actuales son `RAIN`, `TSUNAMI` y `FIRE`.
+`null`. Los códigos de evento vigentes son
+`TSU`, `ERV`, `LLI`, `INU`, `OLJ`, `SEQ`, `CQM`, `AMA`, `PLG`, `INF`,
+`SIS`, `COI`, `DES`, `CAD` y `VDV`.
+
+Consulte `GET /v1/event-types` para traducir cada código sin replicar la tabla.
+Devuelve también la `family` oficial del evento, útil para agrupar en un mapa o
+en un tablero:
+
+```json
+[
+  {
+    "code": "LLI",
+    "name": "Lluvias intensas",
+    "family": "Hidrometeorológico",
+    "is_active": true
+  }
+]
+```
+
+Las familias son `Oceanográfico`, `Geológico interno`, `Geológico externo`,
+`Hidrometeorológico`, `Ambiental`, `Biológico`, `Tecnológico` y
+`Fallo estructural`.
 
 **Sobre `reporter_id`:** identifica de forma estable a quien reporta, para
 poder correlacionar varios reportes de la misma persona, pero **no** contiene

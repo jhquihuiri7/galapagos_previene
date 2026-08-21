@@ -24,7 +24,7 @@ Endpoints relevantes:
   GET /v1/reports?since=&cursor_id=&limit=   Lista incremental (máx. 200/página)
   GET /v1/reports/{id}                        Detalle
   GET /v1/media/{media_id}/content            Bytes de una foto o video
-  GET /v1/event-types                         Catálogo de tipos
+  GET /v1/event-types                         Catálogo: código, nombre y familia
 
 Un reporte tiene esta forma:
 
@@ -32,8 +32,8 @@ Un reporte tiene esta forma:
   "id": "3f2a…",
   "reporter_id": "8c11…",           // UUID anónimo; NO mostrar en la interfaz
   "report_kind": "EVENT",           // "EVENT" o "INCIDENT"
-  "event_type_code": "RAIN",        // "RAIN"|"TSUNAMI"|"FIRE"|null
-  "event_type_name": "Lluvia",
+  "event_type_code": "LLI",         // código de 3 letras del catálogo | null
+  "event_type_name": "Lluvias intensas",
   "latitude": -0.7436,
   "longitude": -90.3134,
   "location_accuracy": 12.5,        // metros; puede ser null
@@ -103,14 +103,37 @@ ceñirse a donde hay reportes.
 
 ### Codificación visual — respétala tal cual
 
-El COLOR codifica el tipo de evento. La FORMA codifica la clase de reporte.
+El COLOR codifica el grupo del evento. La FORMA codifica la clase de reporte.
 Son dos dimensiones distintas del dato y no deben mezclarse:
 
-  Tipo de evento (color de relleno):
-    RAIN    Lluvia     #2a78d6  (azul)      · modo oscuro: #3987e5
-    TSUNAMI Tsunami    #1baf7a  (aqua)      · modo oscuro: #199e70
-    FIRE    Incendio   #e34948  (rojo)      · modo oscuro: #e66767
-    (sin tipo, es decir INCIDENT)  gris neutro
+  El catálogo tiene quince eventos agrupados en ocho familias. En un mapa
+  todos los marcadores se ven a la vez y en cualquier combinación, así que el
+  color debe distinguirse por pares en TODAS las parejas posibles, no solo
+  entre vecinos de una leyenda. Ocho colores no superan esa prueba: medidos con
+  el validador, el peor par cae a ΔE 3.2 con daltonismo y a 7.1 incluso con
+  visión normal, muy por debajo del piso de 15. Tampoco lo superan cuatro.
+
+  Por eso el color codifica un agrupamiento de TRES grandes grupos, que sí está
+  validado en claro y en oscuro, y la familia y el código concretos se leen en
+  la etiqueta, el tooltip y el filtro:
+
+    Natural       Oceanográfico, Geológico interno,   #2a78d6 (azul)
+                  Geológico externo,                  · oscuro: #3987e5
+                  Hidrometeorológico
+                  → TSU, OLJ, ERV, SIS, DES, CAD, LLI, INU, SEQ, VDV
+
+    Antrópico     Tecnológico, Fallo estructural      #eb6834 (naranja)
+                  → AMA, COI                          · oscuro: #d95926
+
+    Ambiental     Ambiental, Biológico                #1baf7a (aqua)
+    y biológico   → CQM, INF, PLG                     · oscuro: #199e70
+
+    (sin tipo, es decir INCIDENT)                     gris neutro
+
+  No añadas un cuarto color para partir estos grupos: cualquier cuarto tono
+  rompe el piso de separación en modo claro o en oscuro. Si hace falta más
+  detalle visual, usa el filtro por familia o divide el mapa en varios paneles
+  (uno por familia), nunca más colores.
 
   Clase de reporte (forma del marcador):
     EVENT     círculo
@@ -118,15 +141,21 @@ Son dos dimensiones distintas del dato y no deben mezclarse:
 
 Reglas obligatorias, no opcionales:
 
-- CADA MARCADOR LLEVA UN ICONO O FORMA DISTINTIVA ADEMÁS DEL COLOR. Esta
-  paleta está validada para daltonismo, pero el par rojo/aqua queda en el
-  margen inferior: sin un segundo codificador (forma o icono) esos dos tipos
-  se confunden para una parte de los usuarios. No es un detalle estético.
+- CADA MARCADOR LLEVA EL CÓDIGO DE TRES LETRAS COMO ETIQUETA O ICONO, ADEMÁS
+  DEL COLOR. El color solo distingue los tres grandes grupos; la familia y el
+  evento concreto SIEMPRE se leen en texto. No es un detalle estético: sin eso
+  el mapa pierde catorce de los quince tipos.
+- El aqua queda por debajo de 3:1 sobre la superficie clara (2.74:1), así que
+  en modo claro esas etiquetas visibles son obligatorias, no opcionales.
 - Cada marcador lleva un anillo de 2px del color de la superficie a su
   alrededor. Resuelve dos problemas a la vez: separa los marcadores que se
   solapan y garantiza que se distingan sobre teselas de cualquier tono.
 - Leyenda siempre visible, con el cuadro de color JUNTO al nombre escrito del
-  tipo. La identidad nunca puede depender solo del color.
+  grupo, y debajo la lista de familias que contiene. La identidad nunca puede
+  depender solo del color.
+- Un filtro por familia (las ocho) y otro por evento (los quince) en una fila
+  sobre el mapa. Filtrar NO puede repintar lo que queda: el color sigue al
+  grupo del reporte, nunca a su posición en la lista.
 - Marcadores de al menos 8px. El texto (etiquetas, popups, leyenda) va en
   color de texto normal, nunca en el color de la serie.
 - Modo oscuro seleccionado, con los valores indicados arriba y teselas

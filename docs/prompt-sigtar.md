@@ -35,7 +35,7 @@ esta misma VM.
 | GET    | /v1/reports                   | Lista incremental (endpoint principal) |
 | GET    | /v1/reports/{id}              | Detalle de un reporte                  |
 | GET    | /v1/media/{media_id}/content  | Bytes de una foto o video              |
-| GET    | /v1/event-types               | Catálogo de tipos de evento            |
+| GET    | /v1/event-types               | Catálogo: código, nombre y familia     |
 | GET    | /healthz                      | Estado del servicio (sin autenticación)|
 
 ## Estructura de un reporte
@@ -44,8 +44,8 @@ esta misma VM.
   "id": "3f2a…",                       // UUID, clave primaria de la ingesta
   "reporter_id": "8c11…",              // UUID estable de quien reporta
   "report_kind": "EVENT",              // "EVENT" o "INCIDENT"
-  "event_type_code": "RAIN",           // "RAIN" | "TSUNAMI" | "FIRE" | null
-  "event_type_name": "Lluvia",
+  "event_type_code": "LLI",            // código de 3 letras del catálogo | null
+  "event_type_name": "Lluvias intensas",
   "latitude": -0.7436,
   "longitude": -90.3134,
   "location_accuracy": 12.5,           // metros; puede ser null

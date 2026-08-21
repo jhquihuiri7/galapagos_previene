@@ -13,7 +13,7 @@ from telegram import (
     ReplyKeyboardRemove,
 )
 
-from app.models import EventType, ReportKind
+from app.models import EVENT_TYPE_BUTTONS, ReportKind
 
 
 def report_kind_keyboard() -> InlineKeyboardMarkup:
@@ -34,27 +34,18 @@ def report_kind_keyboard() -> InlineKeyboardMarkup:
 
 
 def event_type_keyboard() -> InlineKeyboardMarkup:
-    """Muestra los tipos de evento sembrados por ``schema.sql``."""
+    """Muestra los quince eventos adversos sembrados por ``schema.sql``.
 
-    return InlineKeyboardMarkup(
-        [
-            [
-                InlineKeyboardButton(
-                    "🌧️ Lluvia", callback_data=f"event:{EventType.RAIN.value}"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    "🌊 Tsunami", callback_data=f"event:{EventType.TSUNAMI.value}"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    "🔥 Incendio", callback_data=f"event:{EventType.FIRE.value}"
-                )
-            ],
-        ]
-    )
+    Se agrupan de dos en dos para que la lista completa quepa en pantalla sin
+    obligar al usuario a desplazarse demasiado.
+    """
+
+    buttons = [
+        InlineKeyboardButton(label, callback_data=f"event:{event_type.value}")
+        for event_type, label in EVENT_TYPE_BUTTONS.items()
+    ]
+    rows = [buttons[index : index + 2] for index in range(0, len(buttons), 2)]
+    return InlineKeyboardMarkup(rows)
 
 
 def finish_media_keyboard() -> InlineKeyboardMarkup:

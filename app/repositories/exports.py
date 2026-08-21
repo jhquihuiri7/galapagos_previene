@@ -272,7 +272,7 @@ async def list_event_types(database: Database) -> Sequence[Mapping[str, Any]]:
     async with acquire_connection(database) as connection:
         rows = await connection.fetch(
             """
-            SELECT id, code, name, is_active
+            SELECT id, code, name, family, is_active
             FROM event_types
             ORDER BY id ASC
             """

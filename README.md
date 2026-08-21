@@ -14,7 +14,8 @@ transporte a webhook sin reescribir el flujo.
 ## Qué permite hacer
 
 - `/start`, `/iniciar` y `/nuevo` comienzan el mismo flujo.
-- Un reporte puede ser `EVENT` (Lluvia, Tsunami o Incendio) o `INCIDENT`.
+- Un reporte puede ser `EVENT` (uno de los quince eventos adversos del
+  catálogo oficial) o `INCIDENT`.
 - Acepta fotos, vídeos, imágenes/vídeos como documento y cada elemento de un
   álbum como una evidencia independiente.
 - No descarga archivos ni guarda binarios o URL temporales.
@@ -94,7 +95,7 @@ flowchart TD
     B --> C{Tipo elegido}
     C -->|EVENT| D[Transacción: crear DRAFT de evento]
     C -->|INCIDENT| E[Transacción: crear DRAFT de incidente]
-    D --> F[Elegir Lluvia / Tsunami / Incendio]
+    D --> F[Elegir uno de los 15 eventos adversos]
     F --> G[Guardar event_type y paso WAITING_MEDIA]
     E --> H[event_type_id permanece NULL]
     H --> I[WAITING_MEDIA]
@@ -483,8 +484,8 @@ No es obligatorio activar el entorno; esta alternativa funciona igual:
 1. `Settings.from_env()` valida secretos, DSN, tamaños del pool y límite.
 2. PTB crea una `Application` con procesamiento secuencial.
 3. El callback de inicio crea el pool e interpreta `schema.sql`.
-4. PostgreSQL crea tablas e índices idempotentemente y hace *upsert* de
-   `RAIN`, `TSUNAMI` y `FIRE`.
+4. PostgreSQL crea tablas e índices idempotentemente y hace *upsert* de los
+   quince eventos adversos del catálogo oficial.
 5. El bot publica los cuatro comandos visibles mediante `set_my_commands()`.
 6. `run_polling()` comienza a pedir actualizaciones a Telegram.
 
