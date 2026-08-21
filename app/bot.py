@@ -28,10 +28,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_PATH = PROJECT_ROOT / "schema.sql"
 
 BOT_COMMANDS = [
-    BotCommand("iniciar", "Iniciar un nuevo reporte"),
-    BotCommand("nuevo", "Registrar otro reporte"),
-    BotCommand("cancelar", "Cancelar el reporte actual"),
-    BotCommand("ayuda", "Mostrar instrucciones"),
+    BotCommand("iniciar", "Crear un reporte"),
+    BotCommand("nuevo", "Reportar algo más"),
+    BotCommand("cancelar", "Cancelar el reporte"),
+    BotCommand("ayuda", "Ver ayuda"),
 ]
 
 

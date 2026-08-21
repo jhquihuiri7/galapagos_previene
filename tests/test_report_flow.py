@@ -143,7 +143,7 @@ async def test_finish_media_without_evidence_shows_alert_and_stays_in_state(
         report_id,
     )
     query.answer.assert_awaited_once_with(
-        "Debes registrar al menos una foto o video antes de continuar.",
+        "Envíame al menos una foto o video antes de continuar.",
         show_alert=True,
     )
     query.edit_message_text.assert_not_awaited()
@@ -178,9 +178,9 @@ async def test_valid_description_submits_report_and_clears_temporary_session(
         report_id,
         "Se observa fuego junto al camino.",
     )
-    count_media.assert_awaited_once_with(pool, report_id)
     assert context.user_data == {}
     confirmation = message.reply_text.await_args.args[0]
-    assert "información se guardó correctamente" in confirmation
-    assert str(report_id).replace("-", "")[:8].upper() in confirmation
-    assert "Archivos registrados: 3" in confirmation
+    assert "reporte fue enviado" in confirmation
+    assert "911" in confirmation
+    # El código interno del reporte ya no se muestra al usuario.
+    assert str(report_id).replace("-", "")[:8].upper() not in confirmation

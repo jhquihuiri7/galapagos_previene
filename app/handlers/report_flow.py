@@ -65,6 +65,14 @@ from app.states import (
 logger = logging.getLogger(__name__)
 
 
+# Etiquetas legibles para confirmar al usuario el tipo de evento elegido.
+EVENT_TYPE_LABELS = {
+    EventType.RAIN: "Lluvia",
+    EventType.TSUNAMI: "Tsunami",
+    EventType.FIRE: "Incendio",
+}
+
+
 def validate_location(latitude: float, longitude: float) -> bool:
     """Indica si las coordenadas son numéricas, finitas y están en la Tierra."""
 
@@ -151,12 +159,12 @@ async def _missing_session(
     query = update.callback_query
     if query is not None:
         await query.answer(
-            "La sesión del reporte ya no está activa.",
+            "Este reporte ya no está activo. Usa /iniciar.",
             show_alert=True,
         )
     if update.effective_message is not None:
         await update.effective_message.reply_text(
-            "La sesión del reporte terminó. Usa /iniciar para comenzar de nuevo.",
+            "Este reporte ya no está activo. Usa /iniciar.",
             reply_markup=remove_keyboard(),
         )
     return ConversationHandler.END
@@ -174,7 +182,7 @@ async def choose_kind(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     try:
         report_kind = ReportKind(data.removeprefix("kind:"))
     except ValueError:
-        await query.answer("Opción de reporte inválida.", show_alert=True)
+        await query.answer("Esa opción no es válida.", show_alert=True)
         return CHOOSE_KIND
     await _answer_query(query)
 
@@ -194,19 +202,19 @@ async def choose_kind(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
     if report_kind is ReportKind.EVENT:
         await query.edit_message_text(
-            "Seleccionaste Evento. ¿Qué tipo de evento deseas reportar?",
+            "¿Qué tipo de evento quieres reportar?",
             reply_markup=event_type_keyboard(),
         )
         return CHOOSE_EVENT_TYPE
 
     await query.edit_message_text(
-        "Seleccionaste Incidente.\n\n"
-        "Envía una o más fotos o videos como evidencia. También puedes "
-        "enviarlos como documentos."
+        "Incidente \u2713\n\n"
+        "\U0001f4f8 Ahora envíame fotos o videos de lo que está pasando.\n\n"
+        "Puedes enviar varios."
     )
     if query.message is not None:
         await query.message.reply_text(
-            "Cuando termines, pulsa el botón siguiente.",
+            "Cuando termines, pulsa el botón de abajo.",
             reply_markup=finish_media_keyboard(),
         )
     return WAITING_MEDIA
@@ -225,7 +233,7 @@ async def choose_event_type(
     try:
         event_type = EventType((query.data or "").removeprefix("event:"))
     except ValueError:
-        await query.answer("Tipo de evento inválido.", show_alert=True)
+        await query.answer("Ese tipo de evento no es válido.", show_alert=True)
         return CHOOSE_EVENT_TYPE
     updated = await set_event_type(
         _pool(context),
@@ -235,19 +243,19 @@ async def choose_event_type(
     )
     if not updated:
         await query.answer(
-            "No se pudo guardar esa selección. Intenta nuevamente.",
+            "No pudimos guardar esa opción. Intenta de nuevo.",
             show_alert=True,
         )
         return CHOOSE_EVENT_TYPE
     await _answer_query(query)
     await query.edit_message_text(
-        "Tipo de evento registrado.\n\n"
-        "Ahora envía una o más fotos o videos como evidencia. También puedes "
-        "enviarlos como documentos."
+        f"Evento: {EVENT_TYPE_LABELS[event_type]} \u2713\n\n"
+        "\U0001f4f8 Ahora envíame fotos o videos de lo que está pasando.\n\n"
+        "Puedes enviar varios."
     )
     if query.message is not None:
         await query.message.reply_text(
-            "Cuando termines, pulsa el botón siguiente.",
+            "Cuando termines, pulsa el botón de abajo.",
             reply_markup=finish_media_keyboard(),
         )
     return WAITING_MEDIA
@@ -264,8 +272,7 @@ async def receive_media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     extracted = extract_media_data(message)
     if extracted is None:
         await message.reply_text(
-            "Ese archivo no es una imagen o un video compatible. "
-            "Intenta enviarlo como foto, video o documento con un tipo MIME válido.",
+            "Formato no válido. Envía una foto o video.",
             reply_markup=finish_media_keyboard(),
         )
         return WAITING_MEDIA
@@ -297,8 +304,7 @@ async def receive_media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         )
     except MediaLimitReachedError:
         await message.reply_text(
-            f"Ya alcanzaste el máximo de {limit} archivos. "
-            "Pulsa «Finalizar fotos y videos» para continuar.",
+            f"Máximo {limit} archivos. Pulsa el botón para continuar.",
             reply_markup=finish_media_keyboard(),
         )
         return WAITING_MEDIA
@@ -306,17 +312,15 @@ async def receive_media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     count = await count_report_media(_pool(context), report_id)
     if inserted:
         text = (
-            "✅ Archivo registrado correctamente.\n"
-            f"Archivos registrados: {count} de {limit}.\n\n"
-            "Puedes enviar más fotos o videos."
+            f"✅ Archivo recibido ({count} de {limit}).\n\n"
+            "Puedes enviar más o pulsar el botón para continuar."
         )
     else:
         # La restricción UNIQUE(report_id, telegram_message_id) hace idempotente
         # el procesamiento si Telegram vuelve a entregar la misma actualización.
         text = (
-            "ℹ️ Este archivo ya estaba registrado.\n"
-            f"Archivos registrados: {count} de {limit}.\n\n"
-            "Puedes enviar más fotos o videos."
+            f"ℹ️ Ese archivo ya lo tenía ({count} de {limit}).\n\n"
+            "Puedes enviar más o pulsar el botón para continuar."
         )
     await message.reply_text(text, reply_markup=finish_media_keyboard())
     return WAITING_MEDIA
@@ -334,19 +338,18 @@ async def finish_media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         media_count = await finalize_media_step(_pool(context), report_id)
     except NoMediaFilesError:
         await query.answer(
-            "Debes registrar al menos una foto o video antes de continuar.",
+            "Envíame al menos una foto o video antes de continuar.",
             show_alert=True,
         )
         return WAITING_MEDIA
 
     await _answer_query(query)
     await query.edit_message_text(
-        f"✅ Evidencias finalizadas: {media_count} archivo(s) registrado(s)."
+        f"✅ Listo, recibí {media_count} archivo(s)."
     )
     if query.message is not None:
         await query.message.reply_text(
-            "Ahora comparte la ubicación del evento o incidente. "
-            "También puedes seleccionarla manualmente desde el mapa de Telegram.",
+            "\U0001f4cd Compárteme tu ubicación.",
             reply_markup=location_keyboard(),
         )
     return WAITING_LOCATION
@@ -368,7 +371,7 @@ async def receive_location(
         location.longitude,
     ):
         await message.reply_text(
-            "La ubicación no es válida. Intenta compartirla nuevamente.",
+            "Esa ubicación no es válida. Compártela otra vez.",
             reply_markup=location_keyboard(),
         )
         return WAITING_LOCATION
@@ -382,15 +385,13 @@ async def receive_location(
     )
     if not updated:
         await message.reply_text(
-            "No se pudo guardar la ubicación en el paso actual. "
-            "Intenta compartirla nuevamente o usa /iniciar.",
+            "No pudimos guardar la ubicación. Compártela otra vez o usa /iniciar.",
             reply_markup=location_keyboard(),
         )
         return WAITING_LOCATION
     await message.reply_text(
-        "📍 Ubicación registrada.\n\n"
-        "Escribe una descripción clara del evento o incidente "
-        "(mínimo 10 caracteres).",
+        "✅ Listo.\n\n"
+        "✍️ Último paso: cuéntame brevemente qué ocurrió.",
         reply_markup=remove_keyboard(),
     )
     return WAITING_DESCRIPTION
@@ -410,22 +411,18 @@ async def receive_description(
     description = normalize_description(message.text)
     if description is None:
         await message.reply_text(
-            "La descripción debe contener al menos 10 caracteres. "
-            "Por favor, intenta nuevamente."
+            "La descripción debe tener al menos 10 caracteres."
         )
         return WAITING_DESCRIPTION
 
-    report = await submit_report(_pool(context), report_id, description)
-    media_count = await count_report_media(_pool(context), report_id)
-    short_code = str(report.id).replace("-", "")[:8].upper()
+    await submit_report(_pool(context), report_id, description)
     context.user_data.clear()
 
     await message.reply_text(
-        "✅ La información se guardó correctamente.\n\n"
-        f"Código del reporte: {short_code}\n"
-        f"Archivos registrados: {media_count}\n\n"
-        "Gracias por contribuir con Galápagos Previene.\n\n"
-        "Usa /nuevo para registrar otro reporte.",
+        "✅ ¡Listo! Tu reporte fue enviado.\n\n"
+        "Gracias por ayudar a cuidar Galápagos 🌿\n\n"
+        "🚨 Si es una emergencia, llama al 911.\n\n"
+        "Escribe /nuevo para reportar algo más.",
         reply_markup=remove_keyboard(),
     )
     return ConversationHandler.END
@@ -437,7 +434,7 @@ async def unexpected_kind(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     del context
     if update.effective_message is not None:
         await update.effective_message.reply_text(
-            "Selecciona Evento o Incidente usando los botones del mensaje."
+            "👆 Toca uno de los botones de arriba para continuar."
         )
     return CHOOSE_KIND
 
@@ -451,7 +448,7 @@ async def unexpected_event_type(
     del context
     if update.effective_message is not None:
         await update.effective_message.reply_text(
-            "Selecciona Lluvia, Tsunami o Incendio usando los botones."
+            "👆 Toca uno de los botones de arriba para continuar."
         )
     return CHOOSE_EVENT_TYPE
 
@@ -462,8 +459,7 @@ async def unexpected_media(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     del context
     if update.effective_message is not None:
         await update.effective_message.reply_text(
-            "Envía una foto o video compatible, o pulsa "
-            "«Finalizar fotos y videos».",
+            "📸 Necesito una foto o video. Si ya terminaste, pulsa el botón.",
             reply_markup=finish_media_keyboard(),
         )
     return WAITING_MEDIA
@@ -478,8 +474,7 @@ async def unexpected_location(
     del context
     if update.effective_message is not None:
         await update.effective_message.reply_text(
-            "Necesito una ubicación de Telegram. Usa el botón o selecciónala "
-            "manualmente desde el mapa.",
+            "📍 Usa el botón para compartir tu ubicación.",
             reply_markup=location_keyboard(),
         )
     return WAITING_LOCATION
@@ -494,7 +489,7 @@ async def unexpected_description(
     del context
     if update.effective_message is not None:
         await update.effective_message.reply_text(
-            "La descripción debe ser un mensaje de texto de al menos 10 caracteres."
+            "✍️ Escríbeme la descripción como mensaje de texto."
         )
     return WAITING_DESCRIPTION
 

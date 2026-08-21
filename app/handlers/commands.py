@@ -18,14 +18,19 @@ logger = logging.getLogger(__name__)
 
 HELP_TEXT = """🤖 Galápagos Previene
 
-Comandos disponibles:
+Reportar es fácil, solo 4 pasos:
+1️⃣ Elige qué pasó
+2️⃣ Envía fotos o videos
+3️⃣ Comparte tu ubicación
+4️⃣ Cuéntanos brevemente
 
-/iniciar - Iniciar un nuevo reporte
+Comandos:
+/iniciar - Nuevo reporte
 /nuevo - Registrar otro reporte
 /cancelar - Cancelar el reporte actual
-/ayuda - Mostrar instrucciones
+/ayuda - Ver esta ayuda
 
-Para registrar un reporte deberás indicar el tipo, adjuntar una o más fotos o videos, compartir una ubicación y escribir una descripción."""
+🚨 Si es una emergencia, llama al 911."""
 
 
 def _pool(context: ContextTypes.DEFAULT_TYPE) -> Any:
@@ -77,8 +82,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             reply_markup=remove_keyboard(),
         )
     await message.reply_text(
-        "🌿 Bienvenido a Galápagos Previene.\n\n"
-        "¿Qué deseas reportar?",
+        "🌿 ¡Hola! Bienvenido a Galápagos Previene.\n\n"
+        "Aquí puedes avisarnos de algo que esté pasando en las islas.\n\n"
+        "¿Qué quieres reportar?",
         reply_markup=report_kind_keyboard(),
     )
     return CHOOSE_KIND
@@ -101,11 +107,14 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if message is not None:
         if cancelled:
             text = (
-                "✅ El reporte actual fue cancelado. "
-                "Puedes usar /nuevo cuando quieras comenzar otro."
+                "Cancelado ✅ No enviamos nada.\n\n"
+                "Cuando quieras, escribe /nuevo."
             )
         else:
-            text = "No tienes un reporte activo para cancelar. Usa /iniciar para comenzar."
+            text = (
+                "No tienes ningún reporte en curso. "
+                "Escribe /iniciar para empezar."
+            )
         await message.reply_text(text, reply_markup=remove_keyboard())
 
     return ConversationHandler.END

@@ -117,9 +117,9 @@ flowchart TD
     T -->|No| S
     T -->|Sí| U[Transacción: validar integridad y completar]
     U --> V[status SUBMITTED, step COMPLETED, submitted_at]
-    V --> W[Confirmación, código UUID corto y cantidad]
+    V --> W[Confirmación de envío y aviso del 911]
     A -. /cancelar en cualquier paso .-> X[status y step CANCELLED; limpiar conversación]
-    A -. /ayuda .-> Y[Mostrar instrucciones sin alterar el reporte]
+    A -. /ayuda .-> Y[Mostrar ayuda sin alterar el reporte]
 ```
 
 Telegram envía cada archivo de un álbum como un `Update` separado. Por ello el
@@ -361,10 +361,10 @@ nombre de archivo o cualquier otro dato del cliente.
 7. Envíe `/setcommands`, seleccione el bot y pegue exactamente:
 
    ```text
-   iniciar - Iniciar un nuevo reporte
-   nuevo - Registrar otro reporte
-   cancelar - Cancelar el reporte actual
-   ayuda - Mostrar instrucciones
+   iniciar - Crear un reporte
+   nuevo - Reportar algo más
+   cancelar - Cancelar el reporte
+   ayuda - Ver ayuda
    ```
 
    No añada `/start`: Telegram lo usa internamente al pulsar **Iniciar**, pero
@@ -492,14 +492,13 @@ Abra `https://t.me/GalapagosPrevieneBot` (o el username alternativo), pulse
 **Iniciar** y complete un reporte. La confirmación tendrá este formato:
 
 ```text
-✅ La información se guardó correctamente.
+✅ ¡Listo! Tu reporte fue enviado.
 
-Código del reporte: XXXXXXXX
-Archivos registrados: X
+Gracias por ayudar a cuidar Galápagos 🌿
 
-Gracias por contribuir con Galápagos Previene.
+🚨 Si es una emergencia, llama al 911.
 
-Usa /nuevo para registrar otro reporte.
+Escribe /nuevo para reportar algo más.
 ```
 
 ## Polling: cómo funciona

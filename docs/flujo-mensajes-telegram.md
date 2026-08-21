@@ -32,7 +32,7 @@ flowchart TD
     LOCATION -->|Ubicación válida| DESCRIPTION["Escribir descripción de 10+ caracteres"]
     LOCATION -->|Contenido o ubicación inválida| LOCATION
     DESCRIPTION -->|Descripción corta o no textual| DESCRIPTION
-    DESCRIPTION -->|Texto válido| SUBMITTED["Confirmación con código y cantidad de archivos"]
+    DESCRIPTION -->|Texto válido| SUBMITTED["Confirmación de envío y aviso del 911"]
 
     START -.->|/cancelar durante el flujo| CANCELLED["Cancelar el reporte"]
     START -.->|/ayuda en cualquier momento| HELP["Mostrar ayuda sin cambiar el estado"]
@@ -47,10 +47,10 @@ El menú de Telegram muestra estos cuatro comandos:
 
 | Comando | Texto del menú | Efecto |
 |---|---|---|
-| `/iniciar` | Iniciar un nuevo reporte | Inicia el flujo. |
-| `/nuevo` | Registrar otro reporte | Inicia el mismo flujo. |
-| `/cancelar` | Cancelar el reporte actual | Cancela el borrador activo, si existe. |
-| `/ayuda` | Mostrar instrucciones | Muestra ayuda sin alterar el reporte. |
+| `/iniciar` | Crear un reporte | Inicia el flujo. |
+| `/nuevo` | Reportar algo más | Inicia el mismo flujo. |
+| `/cancelar` | Cancelar el reporte | Cancela el borrador activo, si existe. |
+| `/ayuda` | Ver ayuda | Muestra ayuda sin alterar el reporte. |
 
 `/start` también inicia el flujo, aunque no aparece en el menú configurado por
 el bot. Es el comando que Telegram usa normalmente al pulsar **Iniciar** por
@@ -76,9 +76,11 @@ Si ya tenía un borrador activo, primero recibe un mensaje independiente:
 Ese mensaje también ordena ocultar cualquier teclado de respuesta anterior.
 Después, tanto para un usuario nuevo como para uno que reinició, el bot envía:
 
-> 🌿 Bienvenido a Galápagos Previene.
+> 🌿 ¡Hola! Bienvenido a Galápagos Previene.
 >
-> ¿Qué deseas reportar?
+> Aquí puedes avisarnos de algo que esté pasando en las islas.
+>
+> ¿Qué quieres reportar?
 
 **Botones inline, en una misma fila**
 
@@ -95,7 +97,7 @@ Pulsa `🌋 Evento`.
 
 El bot crea el borrador y edita el mensaje de selección para mostrar:
 
-> Seleccionaste Evento. ¿Qué tipo de evento deseas reportar?
+> ¿Qué tipo de evento quieres reportar?
 
 **Botones inline, uno por fila**
 
@@ -108,13 +110,15 @@ El bot crea el borrador y edita el mensaje de selección para mostrar:
 Cuando el usuario elige cualquiera de los tres tipos, el bot guarda la
 selección y vuelve a editar ese mensaje:
 
-> Tipo de evento registrado.
+> Evento: `{Lluvia | Tsunami | Incendio}` ✓
 >
-> Ahora envía una o más fotos o videos como evidencia. También puedes enviarlos como documentos.
+> 📸 Ahora envíame fotos o videos de lo que está pasando.
+>
+> Puedes enviar varios.
 
 Inmediatamente envía un segundo mensaje:
 
-> Cuando termines, pulsa el botón siguiente.
+> Cuando termines, pulsa el botón de abajo.
 
 **Botón inline**
 
@@ -131,13 +135,15 @@ Pulsa `⚠️ Incidente`.
 No se solicita un subtipo. El bot crea el borrador y edita el mensaje de
 selección para mostrar:
 
-> Seleccionaste Incidente.
+> Incidente ✓
 >
-> Envía una o más fotos o videos como evidencia. También puedes enviarlos como documentos.
+> 📸 Ahora envíame fotos o videos de lo que está pasando.
+>
+> Puedes enviar varios.
 
 Después envía un segundo mensaje:
 
-> Cuando termines, pulsa el botón siguiente.
+> Cuando termines, pulsa el botón de abajo.
 
 **Botón inline**
 
@@ -160,10 +166,9 @@ se conservan sus identificadores de Telegram.
 
 Por cada archivo nuevo aceptado, el bot responde:
 
-> ✅ Archivo registrado correctamente.
-> Archivos registrados: `{cantidad}` de `{límite}`.
+> ✅ Archivo recibido (`{cantidad}` de `{límite}`).
 >
-> Puedes enviar más fotos o videos.
+> Puedes enviar más o pulsar el botón para continuar.
 
 El mensaje conserva el botón:
 
@@ -174,24 +179,23 @@ El mensaje conserva el botón:
 Si Telegram vuelve a entregar el mismo mensaje y el archivo ya había sido
 registrado, el bot responde:
 
-> ℹ️ Este archivo ya estaba registrado.
-> Archivos registrados: `{cantidad}` de `{límite}`.
+> ℹ️ Ese archivo ya lo tenía (`{cantidad}` de `{límite}`).
 >
-> Puedes enviar más fotos o videos.
+> Puedes enviar más o pulsar el botón para continuar.
 
 Si ya se alcanzó el máximo configurado:
 
-> Ya alcanzaste el máximo de `{límite}` archivos. Pulsa «Finalizar fotos y videos» para continuar.
+> Máximo `{límite}` archivos. Pulsa el botón para continuar.
 
 Si se envía texto, audio, un documento con MIME no admitido u otro contenido
 en este paso:
 
-> Envía una foto o video compatible, o pulsa «Finalizar fotos y videos».
+> 📸 Necesito una foto o video. Si ya terminaste, pulsa el botón.
 
 La implementación también contiene este mensaje defensivo para un archivo que
 llegue al extractor pero no pueda clasificarse como imagen o video:
 
-> Ese archivo no es una imagen o un video compatible. Intenta enviarlo como foto, video o documento con un tipo MIME válido.
+> Formato no válido. Envía una foto o video.
 
 Todos estos casos mantienen el estado `WAITING_MEDIA` y vuelven a mostrar el
 botón de finalización.
@@ -204,18 +208,18 @@ Pulsa `✅ Finalizar fotos y videos`.
 
 Si todavía no registró ninguna evidencia, Telegram muestra una alerta:
 
-> Debes registrar al menos una foto o video antes de continuar.
+> Envíame al menos una foto o video antes de continuar.
 
 El usuario permanece en `WAITING_MEDIA`.
 
 Si existe al menos una evidencia, el bot edita el mensaje que contenía el
 botón:
 
-> ✅ Evidencias finalizadas: `{cantidad}` archivo(s) registrado(s).
+> ✅ Listo, recibí `{cantidad}` archivo(s).
 
 Después envía un nuevo mensaje:
 
-> Ahora comparte la ubicación del evento o incidente. También puedes seleccionarla manualmente desde el mapa de Telegram.
+> 📍 Compárteme tu ubicación.
 
 **Botón de teclado de respuesta**
 
@@ -231,9 +235,9 @@ ubicación. También es válida una ubicación elegida manualmente desde el mapa
 Al recibir una ubicación válida, el bot guarda latitud, longitud y precisión,
 oculta el teclado de ubicación y responde:
 
-> 📍 Ubicación registrada.
+> ✅ Listo.
 >
-> Escribe una descripción clara del evento o incidente (mínimo 10 caracteres).
+> ✍️ Último paso: cuéntame brevemente qué ocurrió.
 
 **Siguiente estado:** `WAITING_DESCRIPTION`.
 
@@ -242,15 +246,15 @@ y longitud entre `-180` y `180`.
 
 Si Telegram entrega un objeto de ubicación con coordenadas inválidas:
 
-> La ubicación no es válida. Intenta compartirla nuevamente.
+> Esa ubicación no es válida. Compártela otra vez.
 
 Si la ubicación es válida pero ya no puede guardarse en el paso actual:
 
-> No se pudo guardar la ubicación en el paso actual. Intenta compartirla nuevamente o usa /iniciar.
+> No pudimos guardar la ubicación. Compártela otra vez o usa /iniciar.
 
 Si el usuario envía texto, archivos u otro contenido en lugar de una ubicación:
 
-> Necesito una ubicación de Telegram. Usa el botón o selecciónala manualmente desde el mapa.
+> 📍 Usa el botón para compartir tu ubicación.
 
 En los tres casos se mantiene `WAITING_LOCATION` y se vuelve a mostrar el botón
 `📍 Compartir mi ubicación`.
@@ -263,11 +267,11 @@ conservan.
 
 Si el texto tiene menos de 10 caracteres:
 
-> La descripción debe contener al menos 10 caracteres. Por favor, intenta nuevamente.
+> La descripción debe tener al menos 10 caracteres.
 
 Si envía una foto, video, ubicación u otro contenido no textual:
 
-> La descripción debe ser un mensaje de texto de al menos 10 caracteres.
+> ✍️ Escríbeme la descripción como mensaje de texto.
 
 Ambas respuestas mantienen el estado `WAITING_DESCRIPTION`.
 
@@ -277,18 +281,18 @@ Con una descripción válida, el bot vuelve a comprobar la integridad del
 reporte, lo marca como enviado (`SUBMITTED`), limpia la sesión temporal y
 responde:
 
-> ✅ La información se guardó correctamente.
+> ✅ ¡Listo! Tu reporte fue enviado.
 >
-> Código del reporte: `{CÓDIGO_DE_8_CARACTERES}`
-> Archivos registrados: `{cantidad}`
+> Gracias por ayudar a cuidar Galápagos 🌿
 >
-> Gracias por contribuir con Galápagos Previene.
+> 🚨 Si es una emergencia, llama al 911.
 >
-> Usa /nuevo para registrar otro reporte.
+> Escribe /nuevo para reportar algo más.
 
-El código se forma con los primeros ocho caracteres hexadecimales del UUID del
-reporte, sin guiones y en mayúsculas. El teclado de respuesta se oculta y la
-conversación termina.
+Por decisión de producto la confirmación no muestra el identificador interno
+del reporte ni el conteo de archivos: no son datos útiles para el usuario en ese
+momento. El aviso del 911 recuerda que este canal no atiende emergencias en
+curso. El teclado de respuesta se oculta y la conversación termina.
 
 ## 4. Ayuda y cancelación
 
@@ -298,38 +302,45 @@ Funciona dentro o fuera de un reporte y no modifica su estado:
 
 > 🤖 Galápagos Previene
 >
-> Comandos disponibles:
+> Reportar es fácil, solo 4 pasos:
+> 1️⃣ Elige qué pasó
+> 2️⃣ Envía fotos o videos
+> 3️⃣ Comparte tu ubicación
+> 4️⃣ Cuéntanos brevemente
 >
-> /iniciar - Iniciar un nuevo reporte
+> Comandos:
+> /iniciar - Nuevo reporte
 > /nuevo - Registrar otro reporte
 > /cancelar - Cancelar el reporte actual
-> /ayuda - Mostrar instrucciones
+> /ayuda - Ver esta ayuda
 >
-> Para registrar un reporte deberás indicar el tipo, adjuntar una o más fotos o videos, compartir una ubicación y escribir una descripción.
+> 🚨 Si es una emergencia, llama al 911.
 
 ### `/cancelar` con un borrador activo
 
-> ✅ El reporte actual fue cancelado. Puedes usar /nuevo cuando quieras comenzar otro.
+> Cancelado ✅ No enviamos nada.
+>
+> Cuando quieras, escribe /nuevo.
 
 El reporte y las evidencias no se borran; quedan auditados con estado y paso
 `CANCELLED`. Se limpia la sesión y se oculta el teclado de respuesta.
 
 ### `/cancelar` sin un borrador activo
 
-> No tienes un reporte activo para cancelar. Usa /iniciar para comenzar.
+> No tienes ningún reporte en curso. Escribe /iniciar para empezar.
 
 ## 5. Respuestas ante acciones fuera del paso esperado
 
 | Situación | Respuesta visible | Resultado |
 |---|---|---|
-| Escribir en lugar de pulsar Evento/Incidente | `Selecciona Evento o Incidente usando los botones del mensaje.` | Continúa en `CHOOSE_KIND`. |
-| Escribir en lugar de elegir un tipo de evento | `Selecciona Lluvia, Tsunami o Incendio usando los botones.` | Continúa en `CHOOSE_EVENT_TYPE`. |
+| Escribir en lugar de pulsar Evento/Incidente | `👆 Toca uno de los botones de arriba para continuar.` | Continúa en `CHOOSE_KIND`. |
+| Escribir en lugar de elegir un tipo de evento | `👆 Toca uno de los botones de arriba para continuar.` | Continúa en `CHOOSE_EVENT_TYPE`. |
 | Pulsar un botón viejo o que no pertenece al paso activo | Alerta: `Ese botón no corresponde al paso actual.` | No cambia de estado. |
-| Callback de clase de reporte con valor inválido | Alerta: `Opción de reporte inválida.` | Continúa en `CHOOSE_KIND`. |
-| Callback de tipo de evento con valor inválido | Alerta: `Tipo de evento inválido.` | Continúa en `CHOOSE_EVENT_TYPE`. |
-| El tipo de evento válido no puede persistirse | Alerta: `No se pudo guardar esa selección. Intenta nuevamente.` | Continúa en `CHOOSE_EVENT_TYPE`. |
-| Falta el identificador de la sesión durante una transición atendida | Alerta: `La sesión del reporte ya no está activa.` y mensaje `La sesión del reporte terminó. Usa /iniciar para comenzar de nuevo.` | Limpia la sesión y termina la conversación. |
-| Excepción no controlada con un mensaje al cual responder | `Ocurrió un error inesperado al procesar tu solicitud. Intenta nuevamente o usa /iniciar para comenzar otro reporte.` | El detalle técnico solo queda en logs. |
+| Callback de clase de reporte con valor inválido | Alerta: `Esa opción no es válida.` | Continúa en `CHOOSE_KIND`. |
+| Callback de tipo de evento con valor inválido | Alerta: `Ese tipo de evento no es válido.` | Continúa en `CHOOSE_EVENT_TYPE`. |
+| El tipo de evento válido no puede persistirse | Alerta: `No pudimos guardar esa opción. Intenta de nuevo.` | Continúa en `CHOOSE_EVENT_TYPE`. |
+| Falta el identificador de la sesión durante una transición atendida | Alerta y mensaje: `Este reporte ya no está activo. Usa /iniciar.` | Limpia la sesión y termina la conversación. |
+| Excepción no controlada con un mensaje al cual responder | `Hubo un problema. Intenta de nuevo o usa /iniciar.` | El detalle técnico solo queda en logs. |
 
 Los callbacks con valores inválidos de las dos selecciones están bloqueados
 normalmente por los patrones del enrutador; sus textos son protecciones

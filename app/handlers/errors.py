@@ -33,8 +33,7 @@ async def error_handler(
 
     try:
         await update.effective_message.reply_text(
-            "Ocurrió un error inesperado al procesar tu solicitud. "
-            "Intenta nuevamente o usa /iniciar para comenzar otro reporte."
+            "Hubo un problema. Intenta de nuevo o usa /iniciar."
         )
     except TelegramError:
         # El error original es el importante. Un chat eliminado o bloqueado no
