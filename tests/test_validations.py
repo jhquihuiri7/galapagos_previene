@@ -78,24 +78,19 @@ def test_normalize_description_accepts_exactly_ten_characters() -> None:
     assert normalize_description(" 1234567890 ") == "1234567890"
 
 
-def test_event_catalog_covers_the_fifteen_official_codes() -> None:
+def test_event_catalog_covers_the_active_official_codes() -> None:
     """El catálogo, sus etiquetas y sus botones no pueden desincronizarse."""
 
     expected = [
         "TSU",
-        "ERV",
         "LLI",
         "INU",
         "OLJ",
         "SEQ",
-        "CQM",
         "AMA",
         "PLG",
         "INF",
-        "SIS",
         "COI",
-        "DES",
-        "CAD",
         "VDV",
     ]
 
@@ -119,6 +114,10 @@ def test_event_callback_pattern_only_accepts_current_codes() -> None:
 
     assert pattern.match("event:LLI")
     assert pattern.match("event:VDV")
-    # Códigos retirados en la migración al catálogo oficial.
+    # Códigos de la nomenclatura anterior al catálogo oficial.
     assert pattern.match("event:RAIN") is None
     assert pattern.match("event:FIRE") is None
+    # Eventos retirados del catálogo: siguen en la tabla como inactivos, pero
+    # el bot ya no los ofrece ni acepta su callback.
+    for retirado in ("ERV", "CQM", "SIS", "DES", "CAD"):
+        assert pattern.match(f"event:{retirado}") is None

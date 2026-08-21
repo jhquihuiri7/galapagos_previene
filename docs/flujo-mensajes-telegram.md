@@ -19,7 +19,7 @@ flowchart TD
     OLD -->|No| KIND
     CANCEL_OLD --> KIND["Elegir Evento o Incidente"]
 
-    KIND -->|🌋 Evento| EVENT_TYPE["Elegir uno de los 15 eventos adversos"]
+    KIND -->|🌋 Evento| EVENT_TYPE["Elegir uno de los 10 eventos adversos"]
     KIND -->|⚠️ Incidente| MEDIA["Enviar evidencias"]
     EVENT_TYPE --> MEDIA
 
@@ -101,18 +101,15 @@ El bot crea el borrador y edita el mensaje de selección para mostrar:
 
 **Botones inline, dos por fila**
 
-- `🌊 Tsunami` · `🌋 Erupción volcánica`
-- `🌧️ Lluvias intensas` · `💧 Inundación`
-- `🌊 Oleaje` · `🏜️ Sequía`
-- `⚗️ Cont. química` · `🚤 Acc. acuático`
+- `🌊 Tsunami` · `🌧️ Lluvias intensas`
+- `💧 Inundación` · `🌊 Oleaje`
+- `🏜️ Sequía` · `🚤 Acc. acuático`
 - `🐛 Plaga` · `🔥 Inc. forestal`
-- `🌍 Sismo` · `🏗️ Colapso infra.`
-- `⛰️ Deslizamiento` · `🧱 Caídas`
-- `🌬️ Vendaval`
+- `🏗️ Colapso infra.` · `🌬️ Vendaval`
 
 **Estado de conversación:** `CHOOSE_EVENT_TYPE`.
 
-Cuando el usuario elige cualquiera de los quince tipos, el bot guarda la
+Cuando el usuario elige cualquiera de los diez tipos, el bot guarda la
 selección y vuelve a editar ese mensaje:
 
 > Evento: `{nombre del evento elegido}` ✓
@@ -357,7 +354,7 @@ fuera de paso cuando hay una conversación activa.
 | Estado de Telegram | Paso persistido | Qué espera del usuario |
 |---|---|---|
 | `CHOOSE_KIND` | Todavía no existe un reporte | Botón Evento o Incidente. |
-| `CHOOSE_EVENT_TYPE` | `CHOOSE_EVENT_TYPE` | Uno de los 15 botones de evento. |
+| `CHOOSE_EVENT_TYPE` | `CHOOSE_EVENT_TYPE` | Uno de los 10 botones de evento. |
 | `WAITING_MEDIA` | `WAITING_MEDIA` | Una o más evidencias y luego finalizar. |
 | `WAITING_LOCATION` | `WAITING_LOCATION` | Una ubicación de Telegram. |
 | `WAITING_DESCRIPTION` | `WAITING_DESCRIPTION` | Texto de al menos 10 caracteres. |
@@ -402,19 +399,14 @@ Incidente conserva `event_type_id = NULL`.
 | `🌋 Evento` | `kind:EVENT` | Selección de clase. |
 | `⚠️ Incidente` | `kind:INCIDENT` | Selección de clase. |
 | `🌊 Tsunami` | `event:TSU` | Selección de tipo de Evento. |
-| `🌋 Erupción volcánica` | `event:ERV` | Selección de tipo de Evento. |
 | `🌧️ Lluvias intensas` | `event:LLI` | Selección de tipo de Evento. |
 | `💧 Inundación` | `event:INU` | Selección de tipo de Evento. |
 | `🌊 Oleaje` | `event:OLJ` | Selección de tipo de Evento. |
 | `🏜️ Sequía` | `event:SEQ` | Selección de tipo de Evento. |
-| `⚗️ Cont. química` | `event:CQM` | Selección de tipo de Evento. |
 | `🚤 Acc. acuático` | `event:AMA` | Selección de tipo de Evento. |
 | `🐛 Plaga` | `event:PLG` | Selección de tipo de Evento. |
 | `🔥 Inc. forestal` | `event:INF` | Selección de tipo de Evento. |
-| `🌍 Sismo` | `event:SIS` | Selección de tipo de Evento. |
 | `🏗️ Colapso infra.` | `event:COI` | Selección de tipo de Evento. |
-| `⛰️ Deslizamiento` | `event:DES` | Selección de tipo de Evento. |
-| `🧱 Caídas` | `event:CAD` | Selección de tipo de Evento. |
 | `🌬️ Vendaval` | `event:VDV` | Selección de tipo de Evento. |
 | `📤 Cargar fotos y videos` | `media:finish` | Recepción de evidencias. |
 

@@ -106,29 +106,32 @@ ceñirse a donde hay reportes.
 El COLOR codifica el grupo del evento. La FORMA codifica la clase de reporte.
 Son dos dimensiones distintas del dato y no deben mezclarse:
 
-  El catálogo tiene quince eventos agrupados en ocho familias. En un mapa
+  El catálogo activo tiene diez eventos agrupados en seis familias. En un mapa
   todos los marcadores se ven a la vez y en cualquier combinación, así que el
   color debe distinguirse por pares en TODAS las parejas posibles, no solo
-  entre vecinos de una leyenda. Ocho colores no superan esa prueba: medidos con
-  el validador, el peor par cae a ΔE 3.2 con daltonismo y a 7.1 incluso con
-  visión normal, muy por debajo del piso de 15. Tampoco lo superan cuatro.
+  entre vecinos de una leyenda. Seis colores no superan esa prueba, ni la
+  superan cuatro: medido con el validador, el peor par de una paleta de cuatro
+  cae a ΔE 1.9 con daltonismo y a 9.8 incluso con visión normal, por debajo del
+  piso de 15.
 
   Por eso el color codifica un agrupamiento de TRES grandes grupos, que sí está
   validado en claro y en oscuro, y la familia y el código concretos se leen en
   la etiqueta, el tooltip y el filtro:
 
-    Natural       Oceanográfico, Geológico interno,   #2a78d6 (azul)
-                  Geológico externo,                  · oscuro: #3987e5
-                  Hidrometeorológico
-                  → TSU, OLJ, ERV, SIS, DES, CAD, LLI, INU, SEQ, VDV
+    Natural       Oceanográfico, Hidrometeorológico   #2a78d6 (azul)
+                  → TSU, OLJ, LLI, INU, SEQ, VDV      · oscuro: #3987e5
 
     Antrópico     Tecnológico, Fallo estructural      #eb6834 (naranja)
                   → AMA, COI                          · oscuro: #d95926
 
     Ambiental     Ambiental, Biológico                #1baf7a (aqua)
-    y biológico   → CQM, INF, PLG                     · oscuro: #199e70
+    y biológico   → INF, PLG                          · oscuro: #199e70
 
     (sin tipo, es decir INCIDENT)                     gris neutro
+
+  Un reporte histórico puede traer un código retirado (ERV, CQM, SIS, DES o
+  CAD). Trátalo por su familia igual que a los demás: los cinco caen en
+  «Natural» salvo CQM, que es Ambiental.
 
   No añadas un cuarto color para partir estos grupos: cualquier cuarto tono
   rompe el piso de separación en modo claro o en oscuro. Si hace falta más
@@ -144,7 +147,7 @@ Reglas obligatorias, no opcionales:
 - CADA MARCADOR LLEVA EL CÓDIGO DE TRES LETRAS COMO ETIQUETA O ICONO, ADEMÁS
   DEL COLOR. El color solo distingue los tres grandes grupos; la familia y el
   evento concreto SIEMPRE se leen en texto. No es un detalle estético: sin eso
-  el mapa pierde catorce de los quince tipos.
+  el mapa pierde siete de los diez tipos.
 - El aqua queda por debajo de 3:1 sobre la superficie clara (2.74:1), así que
   en modo claro esas etiquetas visibles son obligatorias, no opcionales.
 - Cada marcador lleva un anillo de 2px del color de la superficie a su
@@ -153,7 +156,7 @@ Reglas obligatorias, no opcionales:
 - Leyenda siempre visible, con el cuadro de color JUNTO al nombre escrito del
   grupo, y debajo la lista de familias que contiene. La identidad nunca puede
   depender solo del color.
-- Un filtro por familia (las ocho) y otro por evento (los quince) en una fila
+- Un filtro por familia (las seis) y otro por evento (los diez) en una fila
   sobre el mapa. Filtrar NO puede repintar lo que queda: el color sigue al
   grupo del reporte, nunca a su posición en la lista.
 - Marcadores de al menos 8px. El texto (etiquetas, popups, leyenda) va en

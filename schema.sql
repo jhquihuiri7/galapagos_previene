@@ -29,25 +29,31 @@ CREATE TABLE IF NOT EXISTS event_types (
 ALTER TABLE event_types
     ADD COLUMN IF NOT EXISTS family VARCHAR(32) NOT NULL DEFAULT 'Sin clasificar';
 
--- La carga es idempotente: ejecutar schema.sql otra vez actualiza el nombre y
--- reactiva los valores oficiales sin crear filas duplicadas.
+-- La carga es idempotente: ejecutar schema.sql otra vez actualiza el nombre, la
+-- familia y el estado de los valores oficiales sin crear filas duplicadas.
+--
+-- Los eventos retirados del catálogo se conservan con is_active = FALSE en
+-- lugar de borrarse: la clave foránea es ON DELETE RESTRICT y un reporte
+-- histórico debe poder seguir traduciendo su código. El bot solo ofrece los
+-- activos, que son los que enumera app.models.EventType.
 INSERT INTO event_types (code, name, family, is_active)
 VALUES
     ('TSU', 'Tsunami', 'Oceanográfico', TRUE),
-    ('ERV', 'Erupción volcánica', 'Geológico interno', TRUE),
     ('LLI', 'Lluvias intensas', 'Hidrometeorológico', TRUE),
     ('INU', 'Inundación', 'Hidrometeorológico', TRUE),
     ('OLJ', 'Oleaje', 'Oceanográfico', TRUE),
     ('SEQ', 'Sequía', 'Hidrometeorológico', TRUE),
-    ('CQM', 'Contaminación química', 'Ambiental', TRUE),
     ('AMA', 'Accidente en medios acuáticos', 'Tecnológico', TRUE),
     ('PLG', 'Plaga', 'Biológico', TRUE),
     ('INF', 'Incendio forestal', 'Ambiental', TRUE),
-    ('SIS', 'Sismo', 'Geológico interno', TRUE),
     ('COI', 'Colapso en infraestructura', 'Fallo estructural', TRUE),
-    ('DES', 'Deslizamiento', 'Geológico externo', TRUE),
-    ('CAD', 'Caídas (Colapso)', 'Geológico externo', TRUE),
-    ('VDV', 'Vendaval', 'Hidrometeorológico', TRUE)
+    ('VDV', 'Vendaval', 'Hidrometeorológico', TRUE),
+    -- Retirados del catálogo que ofrece el bot.
+    ('ERV', 'Erupción volcánica', 'Geológico interno', FALSE),
+    ('CQM', 'Contaminación química', 'Ambiental', FALSE),
+    ('SIS', 'Sismo', 'Geológico interno', FALSE),
+    ('DES', 'Deslizamiento', 'Geológico externo', FALSE),
+    ('CAD', 'Caídas (Colapso)', 'Geológico externo', FALSE)
 ON CONFLICT (code) DO UPDATE
 SET
     name = EXCLUDED.name,
