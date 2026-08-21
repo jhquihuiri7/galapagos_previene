@@ -17,7 +17,7 @@ flowchart TD
     MEDIA_OK --> MEDIA
     MEDIA -->|Finalizar sin archivos| MEDIA_EMPTY["Alerta: se necesita al menos uno"]
     MEDIA_EMPTY --> MEDIA
-    MEDIA -->|✅ Finalizar fotos y videos| LOCATION["Compartir ubicación"]
+    MEDIA -->|📤 Cargar fotos y videos| LOCATION["Compartir ubicación"]
 
     LOCATION -->|Ubicación válida| DESCRIPTION["Escribir descripción de 10+ caracteres"]
     LOCATION -->|Contenido o ubicación inválida| LOCATION
@@ -97,7 +97,7 @@ Inmediatamente envía un segundo mensaje:
 
 **Botón inline**
 
-- `✅ Finalizar fotos y videos`
+- `📤 Cargar fotos y videos`
 
 **Siguiente estado:** `WAITING_MEDIA`.
 
@@ -122,7 +122,7 @@ Después envía un segundo mensaje:
 
 **Botón inline**
 
-- `✅ Finalizar fotos y videos`
+- `📤 Cargar fotos y videos`
 
 **Siguiente estado:** `WAITING_MEDIA`.
 
@@ -147,7 +147,7 @@ Por cada archivo nuevo aceptado, el bot responde:
 
 El mensaje conserva el botón:
 
-- `✅ Finalizar fotos y videos`
+- `📤 Cargar fotos y videos`
 
 `{límite}` corresponde a `MAX_MEDIA_FILES`; el valor predeterminado es **10**.
 
@@ -179,7 +179,7 @@ botón de finalización.
 
 **Acción del usuario**
 
-Pulsa `✅ Finalizar fotos y videos`.
+Pulsa `📤 Cargar fotos y videos`.
 
 Si todavía no registró ninguna evidencia, Telegram muestra una alerta:
 
@@ -327,7 +327,7 @@ El reporte y las evidencias no se borran; quedan auditados con estado y paso
 | `⛰️ Deslizamiento` | `event:DES` | Selección de tipo de Evento. |
 | `🧱 Caídas` | `event:CAD` | Selección de tipo de Evento. |
 | `🌬️ Vendaval` | `event:VDV` | Selección de tipo de Evento. |
-| `✅ Finalizar fotos y videos` | `media:finish` | Recepción de evidencias. |
+| `📤 Cargar fotos y videos` | `media:finish` | Recepción de evidencias. |
 
 ### Teclado de respuesta
 

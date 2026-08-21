@@ -269,7 +269,7 @@ async def create_report_media(
 
         # Se comprueba el duplicado antes del estado y del límite. Así una
         # actualización repetida sigue siendo idempotente incluso si el usuario
-        # ya pulsó "Finalizar fotos y videos".
+        # ya pulsó "Cargar fotos y videos".
         duplicate = await connection.fetchval(
             """
             SELECT EXISTS(

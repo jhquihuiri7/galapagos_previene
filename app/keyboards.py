@@ -55,7 +55,7 @@ def finish_media_keyboard() -> InlineKeyboardMarkup:
         [
             [
                 InlineKeyboardButton(
-                    "✅ Finalizar fotos y videos", callback_data="media:finish"
+                    "📤 Cargar fotos y videos", callback_data="media:finish"
                 )
             ]
         ]

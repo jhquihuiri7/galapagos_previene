@@ -106,7 +106,7 @@ flowchart TD
     L --> I
     J -->|No| M[Explicar formatos aceptados]
     M --> I
-    I -->|Finalizar fotos y videos| N{¿Hay al menos una evidencia?}
+    I -->|Cargar fotos y videos| N{¿Hay al menos una evidencia?}
     N -->|No| I
     N -->|Sí| O[Actualizar a WAITING_LOCATION]
     O --> P[Solicitar ubicación con request_location]
@@ -126,7 +126,7 @@ flowchart TD
 Telegram envía cada archivo de un álbum como un `Update` separado. Por ello el
 bot guarda `telegram_media_group_id`, pero **no espera que el álbum completo
 llegue en un solo mensaje** ni avanza por tiempo: permanece en
-`WAITING_MEDIA` hasta que el usuario pulse `Finalizar fotos y videos`.
+`WAITING_MEDIA` hasta que el usuario pulse `Cargar fotos y videos`.
 
 `ConversationHandler` requiere actualizaciones secuenciales. La aplicación se
 construye con `concurrent_updates(False)` para que dos mensajes cercanos del
