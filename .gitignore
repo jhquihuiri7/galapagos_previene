@@ -27,3 +27,9 @@ Thumbs.db
 
 # Registros locales
 *.log
+
+# Remotion (video/)
+video/node_modules/
+video/out/
+video/.remotion/
+video/public/*.mp4

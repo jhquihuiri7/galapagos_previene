@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
@@ -68,7 +70,7 @@ def test_conversation_handler_exposes_the_expected_spanish_flow() -> None:
         WAITING_LOCATION,
         WAITING_DESCRIPTION,
     }
-    assert _commands(handler.fallbacks) == {"cancelar", "ayuda"}
+    assert _commands(handler.fallbacks) == {"cancelar", "tutorial"}
     assert handler.allow_reentry is True
     assert handler.per_chat is True
     assert handler.per_user is True
@@ -121,32 +123,114 @@ async def test_choose_incident_skips_event_type_and_requests_media(
         WorkflowStep.WAITING_MEDIA,
     )
     assert "incidente" in query.edit_message_text.await_args.args[0].lower()
-    query.message.reply_text.assert_awaited_once()
-    assert "cuando termines" in query.message.reply_text.await_args.args[0].lower()
+    assert "juntos" in query.edit_message_text.await_args.args[0].lower()
+
+
+def _media_update(media_group_id: str | None = None) -> tuple[Any, Any]:
+    """Construye un update de foto equivalente al que entrega Telegram."""
+
+    message = SimpleNamespace(
+        message_id=99,
+        media_group_id=media_group_id,
+        caption=None,
+        reply_text=AsyncMock(),
+    )
+    return SimpleNamespace(effective_message=message, callback_query=None), message
 
 
 @pytest.mark.asyncio
-async def test_finish_media_without_evidence_shows_alert_and_stays_in_state(
+async def test_single_photo_closes_upload_and_requests_location(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     report_id = uuid4()
-    finalize = AsyncMock(side_effect=report_flow.NoMediaFilesError())
+    monkeypatch.setattr(
+        report_flow,
+        "extract_media_data",
+        lambda message: SimpleNamespace(
+            media_type="PHOTO",
+            telegram_message_type="PHOTO",
+            file_id="f",
+            file_unique_id="u",
+            mime_type=None,
+            original_file_name=None,
+            file_size=10,
+            width=1,
+            height=1,
+            duration_seconds=None,
+        ),
+    )
+    monkeypatch.setattr(report_flow, "create_report_media", AsyncMock(return_value=True))
+    finalize = AsyncMock(return_value=1)
     monkeypatch.setattr(report_flow, "finalize_media_step", finalize)
     context = _context(report_id=report_id)
-    update, query = _callback_update("media:finish")
+    update, message = _media_update()
 
-    next_state = await report_flow.finish_media(update, context)
+    next_state = await report_flow.receive_media(update, context)
 
     assert next_state == WAITING_MEDIA
-    finalize.assert_awaited_once_with(
-        context.application.bot_data["db_pool"],
-        report_id,
+    finalize.assert_awaited_once()
+    assert context.user_data[report_flow.MEDIA_CLOSED_KEY] is True
+    # Un único mensaje: confirmación de la carga y solicitud de ubicación.
+    message.reply_text.assert_awaited_once()
+    texto = message.reply_text.await_args.args[0]
+    assert "1 archivo(s)" in texto
+    assert "ubicación" in texto
+
+
+@pytest.mark.asyncio
+async def test_media_after_upload_closed_is_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    create = AsyncMock()
+    monkeypatch.setattr(report_flow, "create_report_media", create)
+    context = _context(report_id=uuid4())
+    context.user_data[report_flow.MEDIA_CLOSED_KEY] = True
+    update, message = _media_update()
+
+    next_state = await report_flow.receive_media(update, context)
+
+    assert next_state == WAITING_MEDIA
+    create.assert_not_awaited()
+    assert "ubicación" in message.reply_text.await_args.args[0]
+
+
+@pytest.mark.asyncio
+async def test_album_waits_for_remaining_items_before_closing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(report_flow, "MEDIA_GROUP_TIMEOUT_SECONDS", 0.05)
+    monkeypatch.setattr(
+        report_flow,
+        "extract_media_data",
+        lambda message: SimpleNamespace(
+            media_type="PHOTO",
+            telegram_message_type="PHOTO",
+            file_id="f",
+            file_unique_id="u",
+            mime_type=None,
+            original_file_name=None,
+            file_size=10,
+            width=1,
+            height=1,
+            duration_seconds=None,
+        ),
     )
-    query.answer.assert_awaited_once_with(
-        "Envíame al menos una foto o video antes de continuar.",
-        show_alert=True,
-    )
-    query.edit_message_text.assert_not_awaited()
+    monkeypatch.setattr(report_flow, "create_report_media", AsyncMock(return_value=True))
+    finalize = AsyncMock(return_value=3)
+    monkeypatch.setattr(report_flow, "finalize_media_step", finalize)
+    context = _context(report_id=uuid4())
+
+    for _ in range(3):
+        update, message = _media_update(media_group_id="album-1")
+        await report_flow.receive_media(update, context)
+        # Ningún elemento del álbum confirma por separado.
+        message.reply_text.assert_not_awaited()
+        finalize.assert_not_awaited()
+
+    await asyncio.sleep(0.2)
+
+    finalize.assert_awaited_once()
+    assert "3 archivo(s)" in message.reply_text.await_args.args[0]
 
 
 @pytest.mark.asyncio
@@ -155,9 +239,7 @@ async def test_valid_description_submits_report_and_clears_temporary_session(
 ) -> None:
     report_id = uuid4()
     submit = AsyncMock(return_value=SimpleNamespace(id=report_id))
-    count_media = AsyncMock(return_value=3)
     monkeypatch.setattr(report_flow, "submit_report", submit)
-    monkeypatch.setattr(report_flow, "count_report_media", count_media)
 
     message = SimpleNamespace(
         text="  Se observa fuego junto al camino.  ",
@@ -181,6 +263,6 @@ async def test_valid_description_submits_report_and_clears_temporary_session(
     assert context.user_data == {}
     confirmation = message.reply_text.await_args.args[0]
     assert "reporte fue enviado" in confirmation
-    assert "911" in confirmation
+    assert "En caso de emergencia, llama al ECU 911." in confirmation
     # El código interno del reporte ya no se muestra al usuario.
     assert str(report_id).replace("-", "")[:8].upper() not in confirmation

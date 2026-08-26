@@ -8,6 +8,7 @@ siempre se consultan o guardan en PostgreSQL.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import math
 from typing import Any
@@ -26,7 +27,6 @@ from telegram.ext import (
 from app.handlers.commands import cancel, help_command, start
 from app.keyboards import (
     event_type_keyboard,
-    finish_media_keyboard,
     location_keyboard,
     remove_keyboard,
 )
@@ -40,7 +40,6 @@ from app.models import (
 from app.repositories.media import (
     MediaLimitReachedError,
     NoMediaFilesError,
-    count_report_media,
     create_report_media,
     finalize_media_step,
 )
@@ -57,6 +56,10 @@ from app.states import (
     CHOOSE_KIND,
     DB_USER_ID_KEY,
     MAX_MEDIA_FILES,
+    MEDIA_CLOSED_KEY,
+    MEDIA_GROUP_TIMEOUT_SECONDS,
+    MEDIA_LIMIT_NOTICE_KEY,
+    MEDIA_TASK_KEY,
     WAITING_DESCRIPTION,
     WAITING_LOCATION,
     WAITING_MEDIA,
@@ -70,6 +73,12 @@ logger = logging.getLogger(__name__)
 # la respuesta genérica de «botón fuera de paso».
 _EVENT_CALLBACK_PATTERN = (
     "^event:(?:" + "|".join(event.value for event in EventType) + ")$"
+)
+
+# La carga es única: se piden todos los archivos en un solo envío.
+_MEDIA_PROMPT = (
+    "\U0001f4f8 Ahora envíame fotos o videos de lo que está pasando.\n\n"
+    "Selecciónalos todos y envíalos juntos en un solo mensaje."
 )
 
 
@@ -207,16 +216,10 @@ async def choose_kind(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         )
         return CHOOSE_EVENT_TYPE
 
+    _reset_media_state(context)
     await query.edit_message_text(
-        "Incidente \u2713\n\n"
-        "\U0001f4f8 Ahora envíame fotos o videos de lo que está pasando.\n\n"
-        "Puedes enviar varios."
+        "\u2705 Incidente\n\n" + _MEDIA_PROMPT
     )
-    if query.message is not None:
-        await query.message.reply_text(
-            "Cuando termines, pulsa el botón de abajo.",
-            reply_markup=finish_media_keyboard(),
-        )
     return WAITING_MEDIA
 
 
@@ -248,33 +251,32 @@ async def choose_event_type(
         )
         return CHOOSE_EVENT_TYPE
     await _answer_query(query)
+    _reset_media_state(context)
     await query.edit_message_text(
-        f"Evento: {EVENT_TYPE_LABELS[event_type]} \u2713\n\n"
-        "\U0001f4f8 Ahora envíame fotos o videos de lo que está pasando.\n\n"
-        "Puedes enviar varios."
+        f"\u2705 Evento: {EVENT_TYPE_LABELS[event_type]}\n\n" + _MEDIA_PROMPT
     )
-    if query.message is not None:
-        await query.message.reply_text(
-            "Cuando termines, pulsa el botón de abajo.",
-            reply_markup=finish_media_keyboard(),
-        )
     return WAITING_MEDIA
 
 
 async def receive_media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Guarda una fila por cada actualización de foto/vídeo, incluidos álbumes."""
+    """Guarda cada elemento del álbum y programa el cierre de la única carga."""
 
     message = update.effective_message
     report_id = _active_report_id(context)
     if message is None or report_id is None:
         return await _missing_session(update, context)
 
+    if context.user_data.get(MEDIA_CLOSED_KEY):
+        # La carga es única: lo que llega tarde no entra al reporte.
+        await message.reply_text(
+            "Ya recibí tus archivos. Ahora necesito tu ubicación.",
+            reply_markup=location_keyboard(),
+        )
+        return WAITING_MEDIA
+
     extracted = extract_media_data(message)
     if extracted is None:
-        await message.reply_text(
-            "Formato no válido. Envía una foto o video.",
-            reply_markup=finish_media_keyboard(),
-        )
+        await message.reply_text("Formato no válido. Envía una foto o video.")
         return WAITING_MEDIA
 
     caption = message.caption.strip() if message.caption else None
@@ -296,63 +298,93 @@ async def receive_media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 
     limit = _configured_media_limit(context)
     try:
-        inserted = await create_report_media(
+        # La restricción UNIQUE(report_id, telegram_message_id) hace idempotente
+        # el procesamiento si Telegram vuelve a entregar la misma actualización.
+        await create_report_media(
             _pool(context),
             report_id,
             media,
             max_files=limit,
         )
     except MediaLimitReachedError:
-        await message.reply_text(
-            f"Máximo {limit} archivos. Pulsa el botón para continuar.",
-            reply_markup=finish_media_keyboard(),
-        )
-        return WAITING_MEDIA
+        # Un álbum grande dispararía un aviso por archivo sobrante; basta uno.
+        if not context.user_data.get(MEDIA_LIMIT_NOTICE_KEY):
+            context.user_data[MEDIA_LIMIT_NOTICE_KEY] = True
+            await message.reply_text(
+                f"Solo puedo guardar {limit} archivos; los demás no se cargaron."
+            )
 
-    count = await count_report_media(_pool(context), report_id)
-    if inserted:
-        text = (
-            f"✅ Archivo recibido ({count} de {limit}).\n\n"
-            "Puedes enviar más o pulsar el botón para continuar."
-        )
+    if message.media_group_id is None:
+        # Un envío suelto no tiene más partes en camino: se cierra de inmediato.
+        await _close_media_step(context, message, report_id)
     else:
-        # La restricción UNIQUE(report_id, telegram_message_id) hace idempotente
-        # el procesamiento si Telegram vuelve a entregar la misma actualización.
-        text = (
-            f"ℹ️ Ese archivo ya lo tenía ({count} de {limit}).\n\n"
-            "Puedes enviar más o pulsar el botón para continuar."
-        )
-    await message.reply_text(text, reply_markup=finish_media_keyboard())
+        _schedule_media_close(context, message, report_id)
     return WAITING_MEDIA
 
 
-async def finish_media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Exige una evidencia y cambia atómicamente a ``WAITING_LOCATION``."""
+def _reset_media_state(context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Deja el paso de evidencias listo para una carga nueva."""
 
-    query = update.callback_query
-    report_id = _active_report_id(context)
-    if query is None or report_id is None:
-        return await _missing_session(update, context)
+    _cancel_media_close(context)
+    context.user_data.pop(MEDIA_CLOSED_KEY, None)
+    context.user_data.pop(MEDIA_LIMIT_NOTICE_KEY, None)
 
+
+def _cancel_media_close(context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Anula el cierre pendiente cuando llega otro elemento del mismo álbum."""
+
+    task = context.user_data.pop(MEDIA_TASK_KEY, None)
+    if task is not None:
+        task.cancel()
+
+
+def _schedule_media_close(
+    context: ContextTypes.DEFAULT_TYPE,
+    message: Any,
+    report_id: UUID,
+) -> None:
+    """Reinicia la ventana de espera del álbum tras cada elemento recibido."""
+
+    _cancel_media_close(context)
+
+    async def _wait_and_close() -> None:
+        try:
+            await asyncio.sleep(MEDIA_GROUP_TIMEOUT_SECONDS)
+        except asyncio.CancelledError:
+            return
+        context.user_data.pop(MEDIA_TASK_KEY, None)
+        if _active_report_id(context) != report_id:
+            # El reporte se canceló o se reinició mientras esperábamos.
+            return
+        try:
+            await _close_media_step(context, message, report_id)
+        except Exception:  # pragma: no cover - el cierre corre fuera del handler
+            logger.exception("No fue posible cerrar la carga de evidencias")
+
+    context.user_data[MEDIA_TASK_KEY] = asyncio.create_task(_wait_and_close())
+
+
+async def _close_media_step(
+    context: ContextTypes.DEFAULT_TYPE,
+    message: Any,
+    report_id: UUID,
+) -> None:
+    """Confirma la carga completa y pide la ubicación sin pasos intermedios."""
+
+    if context.user_data.get(MEDIA_CLOSED_KEY):
+        return
     try:
         media_count = await finalize_media_step(_pool(context), report_id)
     except NoMediaFilesError:
-        await query.answer(
-            "Envíame al menos una foto o video antes de continuar.",
-            show_alert=True,
-        )
-        return WAITING_MEDIA
+        await message.reply_text("Envíame al menos una foto o video.")
+        return
 
-    await _answer_query(query)
-    await query.edit_message_text(
-        f"✅ Listo, recibí {media_count} archivo(s)."
+    context.user_data[MEDIA_CLOSED_KEY] = True
+    await message.reply_text(
+        f"✅ Recibí {media_count} archivo(s).\n\n"
+        "\U0001f4cd Ahora compárteme tu ubicación.",
+        reply_markup=location_keyboard(),
     )
-    if query.message is not None:
-        await query.message.reply_text(
-            "\U0001f4cd Compárteme tu ubicación.",
-            reply_markup=location_keyboard(),
-        )
-    return WAITING_LOCATION
 
 
 async def receive_location(
@@ -420,8 +452,8 @@ async def receive_description(
 
     await message.reply_text(
         "✅ ¡Listo! Tu reporte fue enviado.\n\n"
-        "Gracias por ayudar a cuidar Galápagos 🌿\n\n"
-        "🚨 Si es una emergencia, llama al 911.\n\n"
+        "🌿 Gracias por ayudar a cuidar Galápagos.\n\n"
+        "🚨 En caso de emergencia, llama al ECU 911.\n\n"
         "Escribe /nuevo para reportar algo más.",
         reply_markup=remove_keyboard(),
     )
@@ -456,12 +488,16 @@ async def unexpected_event_type(
 async def unexpected_media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Rechaza texto, audio u otros adjuntos mientras se esperan evidencias."""
 
-    del context
-    if update.effective_message is not None:
-        await update.effective_message.reply_text(
-            "📸 Necesito una foto o video. Si ya terminaste, pulsa el botón.",
-            reply_markup=finish_media_keyboard(),
-        )
+    message = update.effective_message
+    if message is not None:
+        if context.user_data.get(MEDIA_CLOSED_KEY):
+            # La carga ya se cerró: el paso vigente es la ubicación.
+            await message.reply_text(
+                "📍 Usa el botón para compartir tu ubicación.",
+                reply_markup=location_keyboard(),
+            )
+        else:
+            await message.reply_text("📸 Necesito una foto o video.")
     return WAITING_MEDIA
 
 
@@ -540,10 +576,13 @@ def build_conversation_handler() -> ConversationHandler:
                 CallbackQueryHandler(unexpected_callback),
                 MessageHandler(not_command, unexpected_event_type),
             ],
+            # El cierre del álbum ocurre fuera de un handler (temporizador), de
+            # modo que la conversación sigue en WAITING_MEDIA hasta que llega la
+            # ubicación; por eso este estado también la atiende.
             WAITING_MEDIA: [
-                CallbackQueryHandler(finish_media, pattern=r"^media:finish$"),
                 CallbackQueryHandler(unexpected_callback),
                 MessageHandler(supported_media, receive_media),
+                MessageHandler(filters.LOCATION, receive_location),
                 MessageHandler(not_command, unexpected_media),
             ],
             WAITING_LOCATION: [
@@ -559,7 +598,7 @@ def build_conversation_handler() -> ConversationHandler:
         },
         fallbacks=[
             CommandHandler("cancelar", cancel),
-            CommandHandler("ayuda", help_command),
+            CommandHandler("tutorial", help_command),
         ],
         allow_reentry=True,
         per_chat=True,
@@ -571,7 +610,6 @@ __all__ = [
     "build_conversation_handler",
     "choose_event_type",
     "choose_kind",
-    "finish_media",
     "normalize_description",
     "receive_description",
     "receive_location",

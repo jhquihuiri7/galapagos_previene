@@ -31,7 +31,7 @@ BOT_COMMANDS = [
     BotCommand("iniciar", "Crear un reporte"),
     BotCommand("nuevo", "Reportar algo más"),
     BotCommand("cancelar", "Cancelar el reporte"),
-    BotCommand("ayuda", "Ver ayuda"),
+    BotCommand("tutorial", "Ver tutorial"),
 ]
 
 
@@ -88,10 +88,10 @@ def build_application(settings: Settings) -> Application:
     application.bot_data["settings"] = settings
 
     # Los handlers independientes están en el mismo grupo y después del
-    # ConversationHandler. Así atienden /ayuda y /cancelar fuera de un flujo,
+    # ConversationHandler. Así atienden /tutorial y /cancelar fuera de un flujo,
     # pero no se ejecutan dos veces cuando una conversación ya está activa.
     application.add_handler(build_conversation_handler())
-    application.add_handler(CommandHandler("ayuda", help_command))
+    application.add_handler(CommandHandler("tutorial", help_command))
     application.add_handler(CommandHandler("cancelar", cancel))
     application.add_error_handler(error_handler)
     return application

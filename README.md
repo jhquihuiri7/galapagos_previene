@@ -42,7 +42,7 @@ GalapagosPreviene/
 │   ├── states.py               # Estados de ConversationHandler
 │   ├── handlers/
 │   │   ├── __init__.py
-│   │   ├── commands.py         # /start, /iniciar, /nuevo, /cancelar, /ayuda
+│   │   ├── commands.py         # /start, /iniciar, /nuevo, /cancelar, /tutorial
 │   │   ├── errors.py           # Manejo global de errores
 │   │   └── report_flow.py      # Pasos y validaciones del reporte
 │   ├── repositories/
@@ -120,7 +120,7 @@ flowchart TD
     U --> V[status SUBMITTED, step COMPLETED, submitted_at]
     V --> W[Confirmación de envío y aviso del 911]
     A -. /cancelar en cualquier paso .-> X[status y step CANCELLED; limpiar conversación]
-    A -. /ayuda .-> Y[Mostrar ayuda sin alterar el reporte]
+    A -. /tutorial .-> Y[Mostrar el tutorial sin alterar el reporte]
 ```
 
 Telegram envía cada archivo de un álbum como un `Update` separado. Por ello el
@@ -365,7 +365,7 @@ nombre de archivo o cualquier otro dato del cliente.
    iniciar - Crear un reporte
    nuevo - Reportar algo más
    cancelar - Cancelar el reporte
-   ayuda - Ver ayuda
+   tutorial - Ver tutorial
    ```
 
    No añada `/start`: Telegram lo usa internamente al pulsar **Iniciar**, pero
@@ -495,9 +495,9 @@ Abra `https://t.me/GalapagosPrevieneBot` (o el username alternativo), pulse
 ```text
 ✅ ¡Listo! Tu reporte fue enviado.
 
-Gracias por ayudar a cuidar Galápagos 🌿
+🌿 Gracias por ayudar a cuidar Galápagos.
 
-🚨 Si es una emergencia, llama al 911.
+🚨 En caso de emergencia, llama al ECU 911.
 
 Escribe /nuevo para reportar algo más.
 ```

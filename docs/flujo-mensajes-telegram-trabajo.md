@@ -25,7 +25,7 @@ flowchart TD
     DESCRIPTION -->|Texto válido| SUBMITTED["Confirmación de envío y aviso del 911"]
 
     START -.->|/cancelar durante el flujo| CANCELLED["Cancelar el reporte"]
-    START -.->|/ayuda en cualquier momento| HELP["Mostrar ayuda sin cambiar el estado"]
+    START -.->|/tutorial en cualquier momento| HELP["Mostrar el tutorial sin cambiar el estado"]
 ```
 
 El reporte se considera enviado únicamente después de recibir una descripción
@@ -266,9 +266,9 @@ del reporte ni el conteo de archivos: no son datos útiles para el usuario en es
 momento. El aviso del 911 recuerda que este canal no atiende emergencias en
 curso. El teclado de respuesta se oculta y la conversación termina.
 
-## 4. Ayuda y cancelación
+## 4. Tutorial y cancelación
 
-### `/ayuda`
+### `/tutorial`
 
 Funciona dentro o fuera de un reporte y no modifica su estado:
 
@@ -284,7 +284,7 @@ Funciona dentro o fuera de un reporte y no modifica su estado:
 > /iniciar - Nuevo reporte
 > /nuevo - Registrar otro reporte
 > /cancelar - Cancelar el reporte actual
-> /ayuda - Ver esta ayuda
+> /tutorial - Ver el tutorial
 >
 > 🚨 Si es una emergencia, llama al 911.
 

@@ -48,20 +48,6 @@ def event_type_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(rows)
 
 
-def finish_media_keyboard() -> InlineKeyboardMarkup:
-    """Mantiene el avance bajo control explícito del usuario, incluso en álbumes."""
-
-    return InlineKeyboardMarkup(
-        [
-            [
-                InlineKeyboardButton(
-                    "📤 Cargar fotos y videos", callback_data="media:finish"
-                )
-            ]
-        ]
-    )
-
-
 def location_keyboard() -> ReplyKeyboardMarkup:
     """Solicita la ubicación actual; Telegram también deja elegirla en el mapa."""
 
@@ -87,7 +73,6 @@ def remove_keyboard() -> ReplyKeyboardRemove:
 
 __all__ = [
     "event_type_keyboard",
-    "finish_media_keyboard",
     "location_keyboard",
     "remove_keyboard",
     "report_kind_keyboard",

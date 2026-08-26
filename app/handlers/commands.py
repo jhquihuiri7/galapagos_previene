@@ -28,7 +28,7 @@ Comandos:
 /iniciar - Nuevo reporte
 /nuevo - Registrar otro reporte
 /cancelar - Cancelar el reporte actual
-/ayuda - Ver esta ayuda
+/tutorial - Ver el tutorial
 
 🚨 Si es una emergencia, llama al 911."""
 
@@ -107,7 +107,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if message is not None:
         if cancelled:
             text = (
-                "Cancelado ✅ No enviamos nada.\n\n"
+                "✅ Cancelado. No enviamos nada.\n\n"
                 "Cuando quieras, escribe /nuevo."
             )
         else:

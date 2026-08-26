@@ -268,8 +268,8 @@ async def create_report_media(
             raise ReportNotFoundError("No existe el reporte solicitado")
 
         # Se comprueba el duplicado antes del estado y del límite. Así una
-        # actualización repetida sigue siendo idempotente incluso si el usuario
-        # ya pulsó "Cargar fotos y videos".
+        # actualización repetida sigue siendo idempotente incluso si la carga
+        # ya se cerró.
         duplicate = await connection.fetchval(
             """
             SELECT EXISTS(

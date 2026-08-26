@@ -23,11 +23,10 @@ flowchart TD
     KIND -->|⚠️ Incidente| MEDIA["Enviar evidencias"]
     EVENT_TYPE --> MEDIA
 
-    MEDIA -->|Foto, video o documento compatible| MEDIA_OK["Confirmar archivo y mostrar contador"]
-    MEDIA_OK --> MEDIA
-    MEDIA -->|Finalizar sin archivos| MEDIA_EMPTY["Alerta: se necesita al menos uno"]
-    MEDIA_EMPTY --> MEDIA
-    MEDIA -->|📤 Cargar fotos y videos| LOCATION["Compartir ubicación"]
+    MEDIA -->|Envío único de fotos, videos o documentos compatibles| MEDIA_OK["Guardar todo el envío"]
+    MEDIA_OK -->|Carga cerrada automáticamente| LOCATION["Compartir ubicación"]
+    MEDIA -->|Archivos enviados después del cierre| MEDIA_LATE["Aviso: la carga ya se cerró"]
+    MEDIA_LATE --> LOCATION
 
     LOCATION -->|Ubicación válida| DESCRIPTION["Escribir descripción de 10+ caracteres"]
     LOCATION -->|Contenido o ubicación inválida| LOCATION
@@ -35,7 +34,7 @@ flowchart TD
     DESCRIPTION -->|Texto válido| SUBMITTED["Confirmación de envío y aviso del 911"]
 
     START -.->|/cancelar durante el flujo| CANCELLED["Cancelar el reporte"]
-    START -.->|/ayuda en cualquier momento| HELP["Mostrar ayuda sin cambiar el estado"]
+    START -.->|/tutorial en cualquier momento| HELP["Mostrar el tutorial sin cambiar el estado"]
 ```
 
 El reporte se considera enviado únicamente después de recibir una descripción
@@ -50,7 +49,7 @@ El menú de Telegram muestra estos cuatro comandos:
 | `/iniciar` | Crear un reporte | Inicia el flujo. |
 | `/nuevo` | Reportar algo más | Inicia el mismo flujo. |
 | `/cancelar` | Cancelar el reporte | Cancela el borrador activo, si existe. |
-| `/ayuda` | Ver ayuda | Muestra ayuda sin alterar el reporte. |
+| `/tutorial` | Ver tutorial | Muestra el tutorial sin alterar el reporte. |
 
 `/start` también inicia el flujo, aunque no aparece en el menú configurado por
 el bot. Es el comando que Telegram usa normalmente al pulsar **Iniciar** por
@@ -112,19 +111,13 @@ El bot crea el borrador y edita el mensaje de selección para mostrar:
 Cuando el usuario elige cualquiera de los diez tipos, el bot guarda la
 selección y vuelve a editar ese mensaje:
 
-> Evento: `{nombre del evento elegido}` ✓
+> ✅ Evento: `{nombre del evento elegido}`
 >
 > 📸 Ahora envíame fotos o videos de lo que está pasando.
 >
-> Puedes enviar varios.
+> Selecciónalos todos y envíalos juntos en un solo mensaje.
 
-Inmediatamente envía un segundo mensaje:
-
-> Cuando termines, pulsa el botón de abajo.
-
-**Botón inline**
-
-- `📤 Cargar fotos y videos`
+No hay botón: la carga es única y el bot avanza solo cuando la recibe.
 
 **Siguiente estado:** `WAITING_MEDIA`.
 
@@ -137,91 +130,82 @@ Pulsa `⚠️ Incidente`.
 No se solicita un subtipo. El bot crea el borrador y edita el mensaje de
 selección para mostrar:
 
-> Incidente ✓
+> ✅ Incidente
 >
 > 📸 Ahora envíame fotos o videos de lo que está pasando.
 >
-> Puedes enviar varios.
+> Selecciónalos todos y envíalos juntos en un solo mensaje.
 
-Después envía un segundo mensaje:
-
-> Cuando termines, pulsa el botón de abajo.
-
-**Botón inline**
-
-- `📤 Cargar fotos y videos`
+No hay botón: la carga es única y el bot avanza solo cuando la recibe.
 
 **Siguiente estado:** `WAITING_MEDIA`.
 
-### Paso 3 — Registrar fotos y videos
+### Paso 3 — Registrar fotos y videos (una sola carga)
 
-El usuario puede enviar repetidamente:
+El usuario envía **una sola vez** todo su material. En ese envío puede incluir:
 
 - una foto nativa de Telegram;
 - un video nativo de Telegram;
 - una imagen enviada como documento, si su MIME comienza con `image/`;
 - un video enviado como documento, si su MIME comienza con `video/`;
-- un álbum, que Telegram entrega al bot como varios mensajes individuales.
+- un álbum con varias fotos y videos seleccionados juntos.
 
 El pie de foto, si existe, se almacena como metadato. No se descarga el archivo:
 se conservan sus identificadores de Telegram.
 
-Por cada archivo nuevo aceptado, el bot responde:
+**Cómo se detecta el fin de la carga**
 
-> ✅ Archivo recibido (`{cantidad}` de `{límite}`).
+Telegram no entrega un álbum como un único mensaje: envía un update por archivo,
+todos con el mismo `media_group_id`. El bot guarda cada elemento en silencio y,
+cuando pasan `MEDIA_GROUP_TIMEOUT_SECONDS` (2 segundos) sin recibir otro
+elemento del mismo grupo, da por completa la carga. Un archivo suelto, sin
+`media_group_id`, cierra la carga de inmediato.
+
+No se confirma archivo por archivo. Al cerrarse la carga, el bot envía un único
+mensaje:
+
+> ✅ Recibí `{cantidad}` archivo(s).
 >
-> Puedes enviar más o pulsar el botón para continuar.
+> 📍 Ahora compárteme tu ubicación.
 
-El mensaje conserva el botón:
+Ese mismo mensaje ya trae el teclado de ubicación, de modo que el paso avanza
+sin ninguna acción adicional del usuario.
 
-- `📤 Cargar fotos y videos`
+Si el envío supera `MAX_MEDIA_FILES` (**10** por defecto), el bot avisa una sola
+vez y conserva los primeros archivos:
 
-`{límite}` corresponde a `MAX_MEDIA_FILES`; el valor predeterminado es **10**.
+> Solo puedo guardar `{límite}` archivos; los demás no se cargaron.
 
-Si Telegram vuelve a entregar el mismo mensaje y el archivo ya había sido
-registrado, el bot responde:
+Si se envían más archivos **después** de que la carga se cerró, no se agregan al
+reporte:
 
-> ℹ️ Ese archivo ya lo tenía (`{cantidad}` de `{límite}`).
->
-> Puedes enviar más o pulsar el botón para continuar.
-
-Si ya se alcanzó el máximo configurado:
-
-> Máximo `{límite}` archivos. Pulsa el botón para continuar.
+> Ya recibí tus archivos. Ahora necesito tu ubicación.
 
 Si se envía texto, audio, un documento con MIME no admitido u otro contenido
-en este paso:
+antes de cerrar la carga:
 
-> 📸 Necesito una foto o video. Si ya terminaste, pulsa el botón.
+> 📸 Necesito una foto o video.
+
+Si ese contenido llega después del cierre, el bot repite la solicitud de
+ubicación:
+
+> 📍 Usa el botón para compartir tu ubicación.
 
 La implementación también contiene este mensaje defensivo para un archivo que
 llegue al extractor pero no pueda clasificarse como imagen o video:
 
 > Formato no válido. Envía una foto o video.
 
-Todos estos casos mantienen el estado `WAITING_MEDIA` y vuelven a mostrar el
-botón de finalización.
+Si el envío no dejó ninguna evidencia registrada, el bot responde y sigue
+esperando:
 
-### Paso 4 — Finalizar evidencias
+> Envíame al menos una foto o video.
 
-**Acción del usuario**
+### Paso 4 — Ubicación
 
-Pulsa `📤 Cargar fotos y videos`.
-
-Si todavía no registró ninguna evidencia, Telegram muestra una alerta:
-
-> Envíame al menos una foto o video antes de continuar.
-
-El usuario permanece en `WAITING_MEDIA`.
-
-Si existe al menos una evidencia, el bot edita el mensaje que contenía el
-botón:
-
-> ✅ Listo, recibí `{cantidad}` archivo(s).
-
-Después envía un nuevo mensaje:
-
-> 📍 Compárteme tu ubicación.
+Como el cierre de la carga ocurre fuera de un handler (mediante el temporizador
+del álbum), la conversación permanece en `WAITING_MEDIA` hasta que llega la
+ubicación; ese estado también atiende los mensajes de ubicación.
 
 **Botón de teclado de respuesta**
 
@@ -230,7 +214,8 @@ Después envía un nuevo mensaje:
 Telegram solicita el consentimiento del usuario antes de compartir la
 ubicación. También es válida una ubicación elegida manualmente desde el mapa.
 
-**Siguiente estado:** `WAITING_LOCATION`.
+**Estado de conversación:** `WAITING_MEDIA` (atiende ubicaciones tras el cierre
+de la carga).
 
 ### Paso 5 — Compartir la ubicación
 
@@ -285,9 +270,9 @@ responde:
 
 > ✅ ¡Listo! Tu reporte fue enviado.
 >
-> Gracias por ayudar a cuidar Galápagos 🌿
+> 🌿 Gracias por ayudar a cuidar Galápagos.
 >
-> 🚨 Si es una emergencia, llama al 911.
+> 🚨 En caso de emergencia, llama al ECU 911.
 >
 > Escribe /nuevo para reportar algo más.
 
@@ -296,9 +281,9 @@ del reporte ni el conteo de archivos: no son datos útiles para el usuario en es
 momento. El aviso del 911 recuerda que este canal no atiende emergencias en
 curso. El teclado de respuesta se oculta y la conversación termina.
 
-## 4. Ayuda y cancelación
+## 4. Tutorial y cancelación
 
-### `/ayuda`
+### `/tutorial`
 
 Funciona dentro o fuera de un reporte y no modifica su estado:
 
@@ -314,13 +299,13 @@ Funciona dentro o fuera de un reporte y no modifica su estado:
 > /iniciar - Nuevo reporte
 > /nuevo - Registrar otro reporte
 > /cancelar - Cancelar el reporte actual
-> /ayuda - Ver esta ayuda
+> /tutorial - Ver el tutorial
 >
 > 🚨 Si es una emergencia, llama al 911.
 
 ### `/cancelar` con un borrador activo
 
-> Cancelado ✅ No enviamos nada.
+> ✅ Cancelado. No enviamos nada.
 >
 > Cuando quieras, escribe /nuevo.
 
@@ -408,7 +393,6 @@ Incidente conserva `event_type_id = NULL`.
 | `🔥 Inc. forestal` | `event:INF` | Selección de tipo de Evento. |
 | `🏗️ Colapso infra.` | `event:COI` | Selección de tipo de Evento. |
 | `🌬️ Vendaval` | `event:VDV` | Selección de tipo de Evento. |
-| `📤 Cargar fotos y videos` | `media:finish` | Recepción de evidencias. |
 
 ### Teclado de respuesta
 
@@ -419,7 +403,7 @@ Incidente conserva `event_type_id = NULL`.
 ## 9. Archivos responsables del flujo
 
 - `app/bot.py`: registra comandos y handlers, y fuerza procesamiento secuencial.
-- `app/handlers/commands.py`: inicio, reinicio, ayuda y cancelación.
+- `app/handlers/commands.py`: inicio, reinicio, tutorial y cancelación.
 - `app/handlers/report_flow.py`: mensajes, validaciones y transiciones.
 - `app/keyboards.py`: etiquetas y organización de botones.
 - `app/states.py`: estados en memoria y límite inicial de archivos.
