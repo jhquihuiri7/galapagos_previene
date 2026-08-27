@@ -165,14 +165,20 @@ def _tutorial_source(context: ContextTypes.DEFAULT_TYPE) -> str | Path | None:
 def _remember_tutorial_file_id(
     context: ContextTypes.DEFAULT_TYPE,
     sent_message: Message | None,
+    *,
+    uploaded: bool,
 ) -> None:
-    """Cachea el file_id del video recién subido para los siguientes envíos.
+    """Cachea el file_id del video enviado para no repetir la subida.
 
     El caché vive en memoria, así que se pierde al reiniciar el proceso. Por eso
-    el identificador nuevo también se registra: es lo que hay que copiar en
-    ``TUTORIAL_VIDEO_FILE_ID`` para que la subida no se repita nunca más. No es
-    un secreto —solo funciona con este bot, que ya guarda file_id de evidencias
-    en PostgreSQL— a diferencia de las URL temporales de ``get_file()``.
+    una subida real registra además el identificador: es lo que hay que copiar
+    en ``TUTORIAL_VIDEO_FILE_ID`` para que no vuelva a ocurrir. No es un secreto
+    —solo funciona con este bot, que ya guarda file_id de evidencias en
+    PostgreSQL— a diferencia de las URL temporales de ``get_file()``.
+
+    ``uploaded`` distingue esa situación de un simple reenvío. Sin ese dato el
+    aviso saldría también en el primer /tutorial de cada arranque, cuando el
+    identificador ya venía configurado y no se transfirió ningún byte.
     """
 
     bot_data = context.application.bot_data
@@ -180,7 +186,7 @@ def _remember_tutorial_file_id(
     file_id = getattr(video, "file_id", None)
     if not isinstance(file_id, str) or not file_id:
         return
-    if bot_data.get(TUTORIAL_FILE_ID_KEY) != file_id:
+    if uploaded:
         logger.info(
             "Video del tutorial subido. Para no repetir la subida, configure "
             "TUTORIAL_VIDEO_FILE_ID=%s",
@@ -205,8 +211,9 @@ async def tutorial(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await message.reply_text(HELP_TEXT)
         return
 
+    uploaded = isinstance(source, Path)
     try:
-        if isinstance(source, Path):
+        if uploaded:
             chat = update.effective_chat
             if chat is not None:
                 # La subida inicial no es instantánea; el aviso evita que
@@ -233,7 +240,7 @@ async def tutorial(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await message.reply_text(HELP_TEXT)
         return
 
-    _remember_tutorial_file_id(context, sent_message)
+    _remember_tutorial_file_id(context, sent_message, uploaded=uploaded)
 
 
 __all__ = [

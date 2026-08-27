@@ -138,3 +138,20 @@ async def test_tutorial_registra_el_file_id_nuevo_una_sola_vez(
     avisos = [r for r in caplog.records if "TUTORIAL_VIDEO_FILE_ID" in r.getMessage()]
     assert len(avisos) == 1
     assert "FILE_ID_REGISTRADO" in avisos[0].getMessage()
+
+
+async def test_tutorial_no_avisa_cuando_solo_reenvia_un_file_id(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    # Reenviar el identificador configurado no transfiere bytes: pedir que se
+    # configure lo que ya está configurado solo ensuciaría el log de cada
+    # arranque.
+    context = _context(tutorial_video_file_id="FILE_ID_CONFIGURADO")
+    update, message = _update()
+    message.reply_video.return_value = _sent_video("FILE_ID_CONFIGURADO")
+
+    with caplog.at_level("INFO", logger=commands.logger.name):
+        await tutorial(update, context)
+
+    assert not [r for r in caplog.records if "TUTORIAL_VIDEO_FILE_ID" in r.getMessage()]
+    assert context.application.bot_data[TUTORIAL_FILE_ID_KEY] == "FILE_ID_CONFIGURADO"
