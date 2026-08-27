@@ -98,6 +98,24 @@ services:
     # proxy con TLS en lugar de abrir este puerto.
     ports:
       - "127.0.0.1:${API_PORT:-8080}:8080"
+    # SIGTAR consume esta API desde sus contenedores `api` y `worker`, que no
+    # comparten red con este proyecto. No sirve `host.docker.internal`: el
+    # puerto de arriba es solo loopback del host, mientras que ese nombre
+    # resuelve al puente de Docker. Y tampoco se les puede unir a `default`,
+    # porque aquí `postgres` es la base de Galápagos Previene y en SIGTAR es la
+    # suya: el nombre quedaría ambiguo y podrían acabar leyendo la equivocada.
+    #
+    # De ahí una red dedicada, en la que el único nombre que se publica es
+    # `galapagos-previene-api`. Se declara aquí, y no con un
+    # `docker network connect` a mano, porque a mano no sobrevive a la
+    # recreación de este contenedor: el 21 de agosto de 2026 se perdió así y
+    # SIGTAR quedó seis días sirviendo reportes cacheados.
+    #
+    # `default` tiene que seguir en la lista: al declarar `networks` el
+    # servicio deja de unirse a ella implícitamente y perdería `postgres`.
+    networks:
+      - default
+      - sigtar-link
     # La API transmite los archivos por trozos hacia el cliente y nunca los
     # guarda, así que tampoco necesita escribir en su sistema de archivos.
     read_only: true
@@ -118,6 +136,17 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+networks:
+  # Vive fuera de este compose porque la comparten dos proyectos, así que
+  # ninguno de los dos puede ser su dueño. Se crea una vez:
+  #
+  #   docker network create sigtar-previene-link
+  #
+  # Solo se le une el servicio `api` de aquí, y `api` y `worker` de SIGTAR.
+  sigtar-link:
+    external: true
+    name: sigtar-previene-link
 
 volumes:
   galapagos_postgres_data:
