@@ -1,6 +1,7 @@
 import React from "react";
 import { Img, staticFile, useCurrentFrame } from "remotion";
 import { tg } from "./theme";
+import { FPS } from "./timing";
 import type { Btn } from "./script";
 
 export const CHAT_BACKGROUND = `radial-gradient(120% 80% at 50% 0%, #16212e 0%, ${tg.chatBg} 60%)`;
@@ -114,7 +115,7 @@ export const Composer: React.FC<{
   clipActive?: boolean;
 }> = ({ keyboard, draft, clipActive }) => {
   const frame = useCurrentFrame();
-  const caret = frame % 30 < 15 ? "|" : " ";
+  const caret = frame % FPS < FPS / 2 ? "|" : " ";
   return (
     <div style={{ flexShrink: 0, background: tg.header }}>
       {keyboard ? (

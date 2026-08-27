@@ -10,13 +10,16 @@ import {
 } from "remotion";
 import { tg } from "./theme";
 import { CHAT_BACKGROUND, Header, HomeIndicator, StatusBar } from "./Frame";
+import { INTRO_DURATION } from "./script";
+import { f } from "./timing";
 
 /** Pantalla de un bot recién abierto: chat vacío y el botón ancho INICIAR. */
 export const Intro: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const enter = spring({ frame: frame - 8, fps, config: { damping: 200 }, durationInFrames: 18 });
-  const press = interpolate(frame, [78, 92], [0, 1], {
+  const enter = spring({ frame: frame - f(8), fps, config: { damping: 200 }, durationInFrames: f(18) });
+  // La pulsación de INICIAR cierra la intro: siempre pegada a su final.
+  const press = interpolate(frame, [INTRO_DURATION - f(22), INTRO_DURATION - f(8)], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });

@@ -1,6 +1,7 @@
 import React from "react";
 import { Composition } from "remotion";
 import { FlujoTelegram, FLUJO_DURATION } from "./Composition";
+import { FPS } from "./telegram/timing";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -8,7 +9,7 @@ export const RemotionRoot: React.FC = () => {
       id="FlujoTelegram"
       component={FlujoTelegram}
       durationInFrames={FLUJO_DURATION}
-      fps={30}
+      fps={FPS}
       width={1080}
       height={1920}
     />

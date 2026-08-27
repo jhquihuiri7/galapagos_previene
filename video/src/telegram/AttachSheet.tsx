@@ -3,6 +3,7 @@ import { Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig }
 import { tg } from "./theme";
 import { GALLERY, PICKED } from "./photos";
 import { CAMERA_DURATION } from "./Camera";
+import { f } from "./timing";
 
 /**
  * Hoja de adjuntos de Telegram para iOS: sube desde abajo, muestra el rollo de
@@ -12,22 +13,26 @@ import { CAMERA_DURATION } from "./Camera";
 // Fases relativas al inicio de la hoja
 const OPEN = 0;
 /** Se toca la celda de cámara; la pantalla de cámara vive en Camera.tsx. */
-export const CAMERA_TAP = 24;
-export const CAMERA_OPEN = CAMERA_TAP + 10;
+export const CAMERA_TAP = f(24);
+export const CAMERA_OPEN = CAMERA_TAP + f(10);
 /** La primera foto llega de la cámara; las otras dos, de la galería. */
-const PICK = [CAMERA_OPEN + CAMERA_DURATION, CAMERA_OPEN + CAMERA_DURATION + 22, CAMERA_OPEN + CAMERA_DURATION + 40];
-const SEND = PICK[2] + 26;
-const CLOSE = SEND + 14;
-export const SHEET_DURATION = CLOSE + 22;
+const PICK = [
+  CAMERA_OPEN + CAMERA_DURATION,
+  CAMERA_OPEN + CAMERA_DURATION + f(22),
+  CAMERA_OPEN + CAMERA_DURATION + f(40),
+];
+const SEND = PICK[2] + f(26);
+const CLOSE = SEND + f(14);
+export const SHEET_DURATION = CLOSE + f(22);
 /** Alto aproximado de la hoja; el chat se desplaza para no quedar tapado. */
 export const SHEET_HEIGHT = 800;
 export const SHEET_CLOSE = CLOSE;
-export const SHEET_RISE = 20;
+export const SHEET_RISE = f(20);
 
 /** Cuánto sube la lista del chat mientras la hoja está abierta (0 a 1). */
 export const sheetProgress = (rel: number) => {
   const up = Math.max(0, Math.min(1, rel / SHEET_RISE));
-  const down = Math.max(0, Math.min(1, (rel - CLOSE) / 12));
+  const down = Math.max(0, Math.min(1, (rel - CLOSE) / f(12)));
   return Math.max(0, up - down);
 };
 
@@ -39,7 +44,7 @@ const SheetPhoto: React.FC<{ index: number; order: number | null; frame: number 
   const photo = GALLERY[index];
   const pickedAt = order !== null ? PICK[order] : null;
   const picked = pickedAt !== null && frame >= pickedAt;
-  const t = picked ? Math.min(1, (frame - (pickedAt as number)) / 8) : 0;
+  const t = picked ? Math.min(1, (frame - (pickedAt as number)) / f(8)) : 0;
 
   return (
     <div
@@ -108,7 +113,7 @@ const SheetPhoto: React.FC<{ index: number; order: number | null; frame: number 
 
 
 const CameraCell: React.FC<{ frame: number }> = ({ frame }) => {
-  const tapped = frame >= CAMERA_TAP && frame < CAMERA_TAP + 12;
+  const tapped = frame >= CAMERA_TAP && frame < CAMERA_TAP + f(12);
   return (
     <div
       style={{
@@ -140,13 +145,13 @@ export const AttachSheet: React.FC<{ startAt: number }> = ({ startAt }) => {
     frame: frame - OPEN,
     fps,
     config: { damping: 200 },
-    durationInFrames: 20,
+    durationInFrames: f(20),
   });
-  const fall = frame >= CLOSE ? Math.min(1, (frame - CLOSE) / 12) : 0;
+  const fall = frame >= CLOSE ? Math.min(1, (frame - CLOSE) / f(12)) : 0;
   const y = interpolate(rise, [0, 1], [1, 0]) + fall;
 
   const count = PICK.filter((p) => frame >= p).length;
-  const pressed = frame >= SEND && frame < SEND + 10;
+  const pressed = frame >= SEND && frame < SEND + f(10);
   const orderOf = (id: string) => {
     const i = PICKED.indexOf(id as (typeof PICKED)[number]);
     return i === -1 ? null : i;

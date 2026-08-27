@@ -21,6 +21,7 @@ import {
 import { CAMERA_DURATION, CameraScreen } from "./Camera";
 import { byId } from "./photos";
 import { LocationMap } from "./Map";
+import { f } from "./timing";
 
 type Bubble = {
   id: string;
@@ -73,7 +74,7 @@ const buildState = (frame: number) => {
     } else if (e.t === "attach") {
       sheetAt = frame - e.at < SHEET_DURATION ? e.at : null;
     } else if (e.t === "tap") {
-      if (frame - e.at < 18) tap = { id: e.id, label: e.label, at: e.at };
+      if (frame - e.at < f(18)) tap = { id: e.id, label: e.label, at: e.at };
     }
   }
   return { items, keyboard, commands, tap, sheetAt };
@@ -192,13 +193,13 @@ const BubbleView: React.FC<{ b: Bubble; tap: { id: string; label: Btn; at: numbe
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const enter = spring({ frame: frame - b.at, fps, config: { damping: 200 }, durationInFrames: 14 });
+  const enter = spring({ frame: frame - b.at, fps, config: { damping: 200 }, durationInFrames: f(14) });
   const out = b.from === "user";
   const editPulse = b.editedAt
-    ? interpolate(frame - b.editedAt, [0, 10], [0.55, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" })
+    ? interpolate(frame - b.editedAt, [0, f(10)], [0.55, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" })
     : 1;
   const tapped = tap && tap.id === b.id ? tap.label : null;
-  const tapProgress = tap ? Math.min(1, (frame - tap.at) / 18) : 0;
+  const tapProgress = tap ? Math.min(1, (frame - tap.at) / f(18)) : 0;
 
   return (
     <div
@@ -248,7 +249,7 @@ const BubbleView: React.FC<{ b: Bubble; tap: { id: string; label: Btn; at: numbe
 const ServiceView: React.FC<{ text: string; at: number }> = ({ text, at }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const enter = spring({ frame: frame - at, fps, config: { damping: 200 }, durationInFrames: 12 });
+  const enter = spring({ frame: frame - at, fps, config: { damping: 200 }, durationInFrames: f(12) });
   return (
     <div style={{ display: "flex", justifyContent: "center", opacity: enter }}>
       <div
@@ -294,7 +295,7 @@ export const TelegramChat: React.FC = () => {
 
   // El header dice "escribiendo…" justo antes de cada mensaje del bot
   const typing = events.some(
-    (e) => e.t === "msg" && e.from === "bot" && e.at - frame > 0 && e.at - frame < 26,
+    (e) => e.t === "msg" && e.from === "bot" && e.at - frame > 0 && e.at - frame < f(26),
   );
   const draft = commands ? "/" : "";
 

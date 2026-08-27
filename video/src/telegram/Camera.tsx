@@ -3,6 +3,7 @@ import { AbsoluteFill, Img, interpolate, spring, staticFile, useCurrentFrame, us
 import { tg } from "./theme";
 import { byId } from "./photos";
 import { HomeIndicator } from "./Frame";
+import { f } from "./timing";
 
 /**
  * Cámara a pantalla completa y previsualización de la foto tomada, siguiendo el
@@ -11,10 +12,10 @@ import { HomeIndicator } from "./Frame";
  */
 
 // Fases relativas a la apertura de la cámara
-const SHUTTER = 36; // se pulsa el obturador
-const FLASH = 6; // duración del destello
-const PREVIEW = 48; // aparece la previsualización
-export const CAMERA_DURATION = 108; // al terminar, vuelve a la hoja
+const SHUTTER = f(36); // se pulsa el obturador
+const FLASH = f(6); // duración del destello
+const PREVIEW = f(48); // aparece la previsualización
+export const CAMERA_DURATION = f(108); // al terminar, vuelve a la hoja
 
 /** La foto que se toma es la columna de humo. */
 const SHOT = "fuego-columna";
@@ -25,8 +26,8 @@ export const CameraScreen: React.FC<{ startAt: number }> = ({ startAt }) => {
   const frame = absolute - startAt;
   const photo = byId(SHOT);
 
-  const open = spring({ frame, fps, config: { damping: 200 }, durationInFrames: 12 });
-  const closing = interpolate(frame, [CAMERA_DURATION - 10, CAMERA_DURATION], [0, 1], {
+  const open = spring({ frame, fps, config: { damping: 200 }, durationInFrames: f(12) });
+  const closing = interpolate(frame, [CAMERA_DURATION - f(10), CAMERA_DURATION], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -35,7 +36,7 @@ export const CameraScreen: React.FC<{ startAt: number }> = ({ startAt }) => {
     frame >= SHUTTER
       ? interpolate(frame, [SHUTTER, SHUTTER + FLASH], [1, 0], { extrapolateRight: "clamp" })
       : 0;
-  const pressed = frame >= SHUTTER - 4 && frame < SHUTTER + 8;
+  const pressed = frame >= SHUTTER - f(4) && frame < SHUTTER + f(8);
 
   // Deriva leve del visor, como una mano sosteniendo el teléfono
   const drift = preview ? 0 : interpolate(frame, [0, SHUTTER], [0, 10], { extrapolateRight: "clamp" });
