@@ -29,7 +29,10 @@ Thumbs.db
 *.log
 
 # Remotion (video/)
+# public/ y out/ quedan fuera del repositorio: son los insumos pesados del
+# render (locuciones, fotos de la galería, teselas del mapa) y los MP4 que
+# produce Remotion. Se versionan aparte, no en git.
 video/node_modules/
 video/out/
 video/.remotion/
-video/public/*.mp4
+video/public/
