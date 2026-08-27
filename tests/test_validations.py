@@ -87,8 +87,8 @@ def test_event_catalog_covers_the_active_official_codes() -> None:
         "INU",
         "OLJ",
         "SEQ",
+        "CQM",
         "AMA",
-        "PLG",
         "INF",
         "COI",
         "VDV",
@@ -119,5 +119,5 @@ def test_event_callback_pattern_only_accepts_current_codes() -> None:
     assert pattern.match("event:FIRE") is None
     # Eventos retirados del catálogo: siguen en la tabla como inactivos, pero
     # el bot ya no los ofrece ni acepta su callback.
-    for retirado in ("ERV", "CQM", "SIS", "DES", "CAD"):
+    for retirado in ("ERV", "PLG", "SIS", "DES", "CAD"):
         assert pattern.match(f"event:{retirado}") is None

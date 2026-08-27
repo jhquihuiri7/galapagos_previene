@@ -125,13 +125,13 @@ Son dos dimensiones distintas del dato y no deben mezclarse:
                   → AMA, COI                          · oscuro: #d95926
 
     Ambiental     Ambiental, Biológico                #1baf7a (aqua)
-    y biológico   → INF, PLG                          · oscuro: #199e70
+    y biológico   → CQM, INF                          · oscuro: #199e70
 
     (sin tipo, es decir INCIDENT)                     gris neutro
 
-  Un reporte histórico puede traer un código retirado (ERV, CQM, SIS, DES o
+  Un reporte histórico puede traer un código retirado (ERV, PLG, SIS, DES o
   CAD). Trátalo por su familia igual que a los demás: los cinco caen en
-  «Natural» salvo CQM, que es Ambiental.
+  «Natural» salvo PLG, que es Biológico.
 
   No añadas un cuarto color para partir estos grupos: cualquier cuarto tono
   rompe el piso de separación en modo claro o en oscuro. Si hace falta más

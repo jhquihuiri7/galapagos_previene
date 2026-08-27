@@ -43,14 +43,14 @@ VALUES
     ('INU', 'Inundación', 'Hidrometeorológico', TRUE),
     ('OLJ', 'Oleaje', 'Oceanográfico', TRUE),
     ('SEQ', 'Sequía', 'Hidrometeorológico', TRUE),
+    ('CQM', 'Contaminación química', 'Ambiental', TRUE),
     ('AMA', 'Accidente en medios acuáticos', 'Tecnológico', TRUE),
-    ('PLG', 'Plaga', 'Biológico', TRUE),
     ('INF', 'Incendio forestal', 'Ambiental', TRUE),
     ('COI', 'Colapso en infraestructura', 'Fallo estructural', TRUE),
     ('VDV', 'Vendaval', 'Hidrometeorológico', TRUE),
     -- Retirados del catálogo que ofrece el bot.
     ('ERV', 'Erupción volcánica', 'Geológico interno', FALSE),
-    ('CQM', 'Contaminación química', 'Ambiental', FALSE),
+    ('PLG', 'Plaga', 'Biológico', FALSE),
     ('SIS', 'Sismo', 'Geológico interno', FALSE),
     ('DES', 'Deslizamiento', 'Geológico externo', FALSE),
     ('CAD', 'Caídas (Colapso)', 'Geológico externo', FALSE)

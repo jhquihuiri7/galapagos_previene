@@ -105,9 +105,9 @@ cancelados son estado interno del flujo del bot.
 
 `report_kind` es `EVENT` o `INCIDENT`. En un `INCIDENT`, `event_type_code` es
 `null`. Los códigos de evento vigentes son
-`TSU`, `LLI`, `INU`, `OLJ`, `SEQ`, `AMA`, `PLG`, `INF`, `COI` y `VDV`.
+`TSU`, `LLI`, `INU`, `OLJ`, `SEQ`, `CQM`, `AMA`, `INF`, `COI` y `VDV`.
 
-`ERV`, `CQM`, `SIS`, `DES` y `CAD` fueron retirados del catálogo: siguen en la
+`ERV`, `PLG`, `SIS`, `DES` y `CAD` fueron retirados del catálogo: siguen en la
 respuesta con `"is_active": false` para poder traducir un reporte histórico,
 pero el bot ya no permite elegirlos.
 

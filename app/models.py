@@ -36,8 +36,8 @@ class EventType(str, Enum):
     INU = "INU"
     OLJ = "OLJ"
     SEQ = "SEQ"
+    CQM = "CQM"
     AMA = "AMA"
-    PLG = "PLG"
     INF = "INF"
     COI = "COI"
     VDV = "VDV"
@@ -51,8 +51,8 @@ EVENT_TYPE_LABELS: dict[EventType, str] = {
     EventType.INU: "Inundación",
     EventType.OLJ: "Oleaje",
     EventType.SEQ: "Sequía",
+    EventType.CQM: "Contaminación química",
     EventType.AMA: "Accidente en medios acuáticos",
-    EventType.PLG: "Plaga",
     EventType.INF: "Incendio forestal",
     EventType.COI: "Colapso en infraestructura",
     EventType.VDV: "Vendaval",
@@ -67,8 +67,8 @@ EVENT_TYPE_BUTTONS: dict[EventType, str] = {
     EventType.INU: "💧 Inundación",
     EventType.OLJ: "🌊 Oleaje",
     EventType.SEQ: "🏜️ Sequía",
+    EventType.CQM: "🧪 Cont. química",
     EventType.AMA: "🚤 Acc. acuático",
-    EventType.PLG: "🐛 Plaga",
     EventType.INF: "🔥 Inc. forestal",
     EventType.COI: "🏗️ Colapso infra.",
     EventType.VDV: "🌬️ Vendaval",

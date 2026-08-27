@@ -102,8 +102,8 @@ El bot crea el borrador y edita el mensaje de selección para mostrar:
 
 - `🌊 Tsunami` · `🌧️ Lluvias intensas`
 - `💧 Inundación` · `🌊 Oleaje`
-- `🏜️ Sequía` · `🚤 Acc. acuático`
-- `🐛 Plaga` · `🔥 Inc. forestal`
+- `🏜️ Sequía` · `🧪 Cont. química`
+- `🚤 Acc. acuático` · `🔥 Inc. forestal`
 - `🏗️ Colapso infra.` · `🌬️ Vendaval`
 
 **Estado de conversación:** `CHOOSE_EVENT_TYPE`.
@@ -388,8 +388,8 @@ Incidente conserva `event_type_id = NULL`.
 | `💧 Inundación` | `event:INU` | Selección de tipo de Evento. |
 | `🌊 Oleaje` | `event:OLJ` | Selección de tipo de Evento. |
 | `🏜️ Sequía` | `event:SEQ` | Selección de tipo de Evento. |
+| `🧪 Cont. química` | `event:CQM` | Selección de tipo de Evento. |
 | `🚤 Acc. acuático` | `event:AMA` | Selección de tipo de Evento. |
-| `🐛 Plaga` | `event:PLG` | Selección de tipo de Evento. |
 | `🔥 Inc. forestal` | `event:INF` | Selección de tipo de Evento. |
 | `🏗️ Colapso infra.` | `event:COI` | Selección de tipo de Evento. |
 | `🌬️ Vendaval` | `event:VDV` | Selección de tipo de Evento. |
