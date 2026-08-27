@@ -9,29 +9,27 @@ que facilita cambiar más adelante a ``run_webhook``.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import cast
 
 import asyncpg
 from telegram import BotCommand
 from telegram.ext import Application, CommandHandler
 
-from app.config import Settings
+from app.config import PROJECT_ROOT, Settings
 from app.database import close_pool, create_pool, initialize_database
-from app.handlers.commands import cancel, help_command
+from app.handlers.commands import cancel, tutorial
 from app.handlers.errors import error_handler
 from app.handlers.report_flow import build_conversation_handler
 
 logger = logging.getLogger(__name__)
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_PATH = PROJECT_ROOT / "schema.sql"
 
 BOT_COMMANDS = [
     BotCommand("iniciar", "Crear un reporte"),
     BotCommand("nuevo", "Reportar algo más"),
     BotCommand("cancelar", "Cancelar el reporte"),
-    BotCommand("tutorial", "Ver tutorial"),
+    BotCommand("tutorial", "Ver el video del tutorial"),
 ]
 
 
@@ -91,7 +89,7 @@ def build_application(settings: Settings) -> Application:
     # ConversationHandler. Así atienden /tutorial y /cancelar fuera de un flujo,
     # pero no se ejecutan dos veces cuando una conversación ya está activa.
     application.add_handler(build_conversation_handler())
-    application.add_handler(CommandHandler("tutorial", help_command))
+    application.add_handler(CommandHandler("tutorial", tutorial))
     application.add_handler(CommandHandler("cancelar", cancel))
     application.add_error_handler(error_handler)
     return application

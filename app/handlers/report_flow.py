@@ -24,7 +24,7 @@ from telegram.ext import (
     filters,
 )
 
-from app.handlers.commands import cancel, help_command, start
+from app.handlers.commands import cancel, start, tutorial
 from app.keyboards import (
     event_type_keyboard,
     location_keyboard,
@@ -598,7 +598,7 @@ def build_conversation_handler() -> ConversationHandler:
         },
         fallbacks=[
             CommandHandler("cancelar", cancel),
-            CommandHandler("tutorial", help_command),
+            CommandHandler("tutorial", tutorial),
         ],
         allow_reentry=True,
         per_chat=True,

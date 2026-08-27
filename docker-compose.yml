@@ -38,10 +38,21 @@ services:
       DB_POOL_MAX_SIZE: ${DB_POOL_MAX_SIZE:-10}
       DB_COMMAND_TIMEOUT: ${DB_COMMAND_TIMEOUT:-30}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # El MP4 del tutorial no entra en la imagen: `video/out/` queda fuera del
+      # repositorio y del build. En su lugar se guarda el file_id que Telegram
+      # devolvió la primera vez (scripts/tutorial-file-id.py) y el bot reenvía
+      # ese archivo. Sin valor, /tutorial responde solo con el texto de ayuda.
+      TUTORIAL_VIDEO_FILE_ID: ${TUTORIAL_VIDEO_FILE_ID:-}
+      TUTORIAL_VIDEO_PATH: ${TUTORIAL_VIDEO_PATH:-}
     # El bot no escribe archivos: persiste en PostgreSQL y deja las evidencias
     # alojadas en Telegram. Un sistema de archivos de solo lectura reduce el
     # impacto de una dependencia comprometida.
     read_only: true
+    # Para subir el video desde el contenedor en vez de usar un file_id, monte
+    # el render en solo lectura y apunte TUTORIAL_VIDEO_PATH a él. Requiere que
+    # el archivo exista en el host: si falta, el contenedor no arranca.
+    # volumes:
+    #   - ./video/out/flujo-telegram-4k60.mp4:/app/media/tutorial.mp4:ro
     tmpfs:
       - /tmp
     security_opt:

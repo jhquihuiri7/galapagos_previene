@@ -56,6 +56,9 @@ GalapagosPreviene/
 ├── docs/
 │   ├── example_queries.sql
 │   └── galapagos-previene.service
+├── scripts/
+│   ├── tutorial-file-id.py     # Sube el video y muestra su file_id
+│   └── video-para-telegram.sh  # Render 1080p60 compatible desde el máster 4K
 ├── tests/
 │   ├── test_media_extraction.py
 │   ├── test_report_flow.py
@@ -120,7 +123,7 @@ flowchart TD
     U --> V[status SUBMITTED, step COMPLETED, submitted_at]
     V --> W[Confirmación de envío y aviso del 911]
     A -. /cancelar en cualquier paso .-> X[status y step CANCELLED; limpiar conversación]
-    A -. /tutorial .-> Y[Mostrar el tutorial sin alterar el reporte]
+    A -. /tutorial .-> Y[Enviar el video del tutorial sin alterar el reporte]
 ```
 
 Telegram envía cada archivo de un álbum como un `Update` separado. Por ello el
@@ -307,6 +310,64 @@ debe almacenar, exponer ni registrar en logs**. Si una tarea administrativa la
 necesita, `get_temporary_telegram_file_url()` la solicita de nuevo al momento.
 El dato permanente sigue siendo `telegram_file_id`.
 
+### El video de `/tutorial`
+
+`/tutorial` responde con el render de compatibilidad que vive en `video/out/`
+(1080×1920 a 60 fps, 9,5 MB, 64 s).
+
+**El máster 4K no sirve para enviarlo.** Remotion lo produce en H.264 High
+**nivel 5.2**, y el reproductor integrado de Telegram no lo decodifica: entrega
+el archivo y ofrece abrirlo con una aplicación externa, así que el tutorial no se
+ve. El límite de 50 MB de la API nunca fue el problema —el 4K pesa 36 MB— sino el
+nivel del códec. El techo seguro es **nivel 4.2**, que cubre 1080p60 en cualquier
+teléfono. `scripts/video-para-telegram.sh` baja el máster a ese perfil y deja
+constancia de por qué:
+
+```bash
+./scripts/video-para-telegram.sh
+``` El mismo `file_id` que sirve para las evidencias
+se aprovecha aquí en sentido contrario: el archivo se sube **una sola vez** y
+después se reenvía por identificador, sin volver a transferir los bytes.
+
+`_tutorial_source()` elige la fuente en este orden:
+
+1. `TUTORIAL_VIDEO_FILE_ID`, si está configurado.
+2. El `file_id` que el propio proceso cacheó en `bot_data` tras subir el archivo.
+3. `TUTORIAL_VIDEO_PATH` —o `video/out/flujo-telegram-1080p60.mp4` si existe—
+   que se sube con `supports_streaming=True` y un timeout ampliado.
+
+Sin ninguna de las tres, el comando responde solo con el texto de ayuda, igual
+que antes de existir el video. Un fallo de Telegram al enviarlo también cae en
+ese texto: el tutorial nunca deja al usuario sin respuesta.
+
+En producción el MP4 no está disponible —`video/out/` queda fuera de Git y del
+`Dockerfile`, y el contenedor monta el sistema de archivos en solo lectura—, así
+que conviene fijar `TUTORIAL_VIDEO_FILE_ID`. Hay dos maneras de obtenerlo:
+
+**Con el bot detenido**, ejecútelo desde el repositorio, donde la ruta
+predeterminada ya existe, y pida `/tutorial` en Telegram. El bot sube el video y
+registra el identificador:
+
+```text
+INFO | app.handlers.commands | Video del tutorial subido. Para no repetir la
+subida, configure TUTORIAL_VIDEO_FILE_ID=BAACAgEAAx0…
+```
+
+**Sin detenerlo**, con el script, que necesita el chat de destino porque es él
+quien inicia la conversación:
+
+```bash
+python3 scripts/tutorial-file-id.py 123456789
+```
+
+Ambas rutas terminan igual: se copia el valor al `.env` del servidor y se
+reinicia el bot. Desde ahí los envíos son instantáneos y el MP4 deja de hacer
+falta en tiempo de ejecución.
+
+Obtener un `file_id` no valida el contenido: el del máster 4K se consiguió sin
+error y el video seguía sin reproducirse. Conviene abrirlo en Telegram antes de
+fijarlo en el `.env`.
+
 ## PostgreSQL asíncrono
 
 `asyncpg.create_pool()` mantiene entre 1 y 10 conexiones reutilizables con un
@@ -365,7 +426,7 @@ nombre de archivo o cualquier otro dato del cliente.
    iniciar - Crear un reporte
    nuevo - Reportar algo más
    cancelar - Cancelar el reporte
-   tutorial - Ver tutorial
+   tutorial - Ver el video del tutorial
    ```
 
    No añada `/start`: Telegram lo usa internamente al pulsar **Iniciar**, pero
@@ -406,6 +467,8 @@ entorno. Las variables disponibles son:
 | `DB_POOL_MAX_SIZE` | No | Conexiones máximas, por defecto 10 |
 | `DB_COMMAND_TIMEOUT` | No | Timeout SQL en segundos, por defecto 30 |
 | `LOG_LEVEL` | No | `DEBUG`, `INFO`, `WARNING`, etc. |
+| `TUTORIAL_VIDEO_FILE_ID` | No | `file_id` del video de `/tutorial` |
+| `TUTORIAL_VIDEO_PATH` | No | MP4 en disco para la primera subida |
 
 `DATABASE_URL` debe usar los mismos usuario, contraseña, puerto y base de las
 variables `POSTGRES_*`. Los caracteres especiales de usuario/contraseña deben

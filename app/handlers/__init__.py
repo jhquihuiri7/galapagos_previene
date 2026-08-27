@@ -1,6 +1,6 @@
 """Handlers públicos de Galápagos Previene."""
 
-from app.handlers.commands import cancel, help_command, start
+from app.handlers.commands import cancel, help_command, start, tutorial
 from app.handlers.errors import error_handler
 from app.handlers.report_flow import (
     build_conversation_handler,
@@ -26,6 +26,7 @@ __all__ = [
     "receive_location",
     "receive_media",
     "start",
+    "tutorial",
     "validate_description",
     "validate_location",
 ]
